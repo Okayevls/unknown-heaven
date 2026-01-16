@@ -1,1 +1,1 @@
-print("Heaven Beta: Welcome")
+print("Heaven Beta 1: Welcome")
