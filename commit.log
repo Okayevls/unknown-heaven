@@ -1,6 +1,2 @@
-[master 33ba221] Auto-commit 17.01.2026  1:05:01,41
- 4 files changed, 63 insertions(+), 1 deletion(-)
- create mode 100644 commit.log
- delete mode 160000 heaven
- create mode 100644 source/Application.lua
- create mode 100644 source/util/offsets/Service.lua
+[master 92b7190] Auto-commit 17.01.2026  1:10:57,49
+ 3 files changed, 10 insertions(+), 2 deletions(-)
