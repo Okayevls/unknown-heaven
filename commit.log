@@ -1,4 +1,2 @@
-[main 3500975] Auto-commit 17.01.2026 23:25:36,60
- 6 files changed, 88 insertions(+), 3 deletions(-)
- create mode 100644 source/FastDownloader.lua
- create mode 100644 source/panel/loaderGui/LoaderPanel.lua
+[main 22fe1c6] Auto-commit 17.01.2026 23:55:11,77
+ 2 files changed, 5 insertions(+), 3 deletions(-)
