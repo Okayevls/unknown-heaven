@@ -47,7 +47,33 @@ function GitHubLoader:LoadJSON(path)
     return data
 end
 
-function GitHubLoader:Load(path)
+--function GitHubLoader:Load(path)
+--    if self.cache[path] then
+--        return self.cache[path]
+--    end
+--
+--    local url = self:Raw(path)
+--    local success, code = pcall(function()
+--        return game:HttpGet(url)
+--    end)
+--
+--    if not success or not code or code == "" then
+--        warn("[GitHubLoader] ❌ Failed to fetch module:", path, url)
+--        return nil
+--    end
+--
+--    local func, err = loadstring(code)
+--    if not func then
+--        warn("[GitHubLoader] ❌ loadstring failed for:", path, err)
+--        return nil
+--    end
+--
+--    local module = func()
+--    self.cache[path] = module
+--    return module
+--end
+
+function GitHubLoader:Load(path, ...)
     if self.cache[path] then
         return self.cache[path]
     end
@@ -68,9 +94,17 @@ function GitHubLoader:Load(path)
         return nil
     end
 
-    local module = func()
-    self.cache[path] = module
-    return module
+    local ok, moduleOrErr = pcall(function()
+        return func(...)
+    end)
+
+    if not ok then
+        warn("[GitHubLoader] ❌ module runtime error for:", path, moduleOrErr)
+        return nil
+    end
+
+    self.cache[path] = moduleOrErr
+    return moduleOrErr
 end
 
 return GitHubLoader
