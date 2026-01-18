@@ -10,13 +10,13 @@ print("Heaven: Step - 2 (Loading Injector...)")
 local RenderUtil = inject:Load("source/util/render/RenderUtil.lua")
 print("Heaven: Step - 3 (Loading Utility...)")
 
---local ctx = {
---    Inject = inject,
---    Render = RenderUtil,
---}
---
-----Main
---inject:Load("source/panel/loaderGui/LoaderPanel.lua", ctx)
+local ctx = {
+    Inject = inject,
+    Render = RenderUtil,
+}
+
+--Main
+inject:Load("source/panel/loaderGui/LoaderPanel.lua", ctx)
 print("Heaven: Step - 4 (Loading Main...)")
 
 print("Heaven: Welcome")
