@@ -14,16 +14,19 @@ if Render and Render.new then
     local r = Render.new({ Name = "Panel1" })
 
     r:Rect({
-        Pos = Vector2.new(40, 40),
-        Size = Vector2.new(260, 80),
-        Color = Color3.fromRGB(30, 30, 35),
-        Radius = 10,
+        Pos = Vector2.new(40, 140),
+        Size = Vector2.new(260, 120),
+        Radius = 12,
         Thickness = 1,
-        StrokeColor = Color3.fromRGB(80, 80, 90),
-        StrokeTransparency = 0.2,
+        StrokeTransparency = 0.35,
+        Gradient = {
+            Rotation = 90,
+            Color = ColorSequence.new(
+                    Color3.fromRGB(35, 35, 45),
+                    Color3.fromRGB(20, 20, 25)
+            )
+        },
         Highlight = true,
-        HighlightHeight = 14,
-        HighlightTransparency = 0.9,
     })
 
     --r:Text({
