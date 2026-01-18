@@ -1,13 +1,13 @@
 local Panel = {}
 Panel.__index = Panel
 
-local ctx = ...
+local ctx = getgenv().HeavenCtx
+
 if not ctx then
     warn("[LoaderPanel] ctx not provided")
     return Panel
 end
 
-local Inject = ctx.Inject
 local Render = ctx.Render
 
 if Render and Render.new then
@@ -30,7 +30,7 @@ if Render and Render.new then
     })
 end
 
-
+return Panel
 
 --local Players = game:GetService("Players")
 --local TweenService = game:GetService("TweenService")
