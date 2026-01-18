@@ -1,37 +1,37 @@
 local HttpService = game:GetService("HttpService")
 
-local GitHubLoader = {}
-GitHubLoader.__index = GitHubLoader
+local FastDownloader = {}
+FastDownloader.__index = FastDownloader
 
-function GitHubLoader.new(user, repo, branch)
+function FastDownloader.new(user, repo, branch)
     return setmetatable({
         user = user,
         repo = repo,
         branch = branch,
         sha = nil,
         cache = {}
-    }, GitHubLoader)
+    }, FastDownloader)
 end
 
-function GitHubLoader:GetLatestSHA()
+function FastDownloader:GetLatestSHA()
     local apiUrl = "https://api.github.com/repos/"..self.user.."/"..self.repo.."/commits/"..self.branch
     local data = HttpService:JSONDecode(game:HttpGet(apiUrl))
     self.sha = data.sha
     return self
 end
 
-function GitHubLoader:Raw(path)
+function FastDownloader:Raw(path)
     return "https://raw.githubusercontent.com/"..self.user.."/"..self.repo.."/"..self.sha.."/"..path.."?v="..os.time()
 end
 
-function GitHubLoader:LoadJSON(path)
+function FastDownloader:LoadJSON(path)
     local url = self:Raw(path)
     local success, code = pcall(function()
         return game:HttpGet(url)
     end)
 
     if not success or not code then
-        warn("[GitHubLoader] Failed to fetch JSON:", path)
+        warn("[FastDownloader] Failed to fetch JSON:", path)
         return nil
     end
 
@@ -40,14 +40,14 @@ function GitHubLoader:LoadJSON(path)
     end)
 
     if not ok then
-        warn("[GitHubLoader] JSON decode failed:", path, data)
+        warn("[FastDownloader] JSON decode failed:", path, data)
         return nil
     end
 
     return data
 end
 
---function GitHubLoader:Load(path)
+--function FastDownloader:Load(path)
 --    if self.cache[path] then
 --        return self.cache[path]
 --    end
@@ -58,13 +58,13 @@ end
 --    end)
 --
 --    if not success or not code or code == "" then
---        warn("[GitHubLoader] ❌ Failed to fetch module:", path, url)
+--        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
 --        return nil
 --    end
 --
 --    local func, err = loadstring(code)
 --    if not func then
---        warn("[GitHubLoader] ❌ loadstring failed for:", path, err)
+--        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
 --        return nil
 --    end
 --
@@ -73,7 +73,7 @@ end
 --    return module
 --end
 
-function GitHubLoader:Load(path, ...)
+function FastDownloader:Load(path, ...)
     if self.cache[path] then
         return self.cache[path]
     end
@@ -84,13 +84,13 @@ function GitHubLoader:Load(path, ...)
     end)
 
     if not success or not code or code == "" then
-        warn("[GitHubLoader] ❌ Failed to fetch module:", path, url)
+        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
         return nil
     end
 
     local func, err = loadstring(code)
     if not func then
-        warn("[GitHubLoader] ❌ loadstring failed for:", path, err)
+        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
         return nil
     end
 
@@ -99,7 +99,7 @@ function GitHubLoader:Load(path, ...)
     end)
 
     if not ok then
-        warn("[GitHubLoader] ❌ module runtime error for:", path, moduleOrErr)
+        warn("[FastDownloader] ❌ module runtime error for:", path, moduleOrErr)
         return nil
     end
 
@@ -107,4 +107,4 @@ function GitHubLoader:Load(path, ...)
     return moduleOrErr
 end
 
-return GitHubLoader
+return FastDownloader
