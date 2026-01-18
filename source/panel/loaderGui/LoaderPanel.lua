@@ -18,7 +18,7 @@ if Render and Render.new then
         Size = Vector2.new(220, 90),
         Filled = true,
         Radius = 15,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.5,
         Color = Color3.fromRGB(15, 15, 15),
     })
 
