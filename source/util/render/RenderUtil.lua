@@ -91,7 +91,7 @@ function RenderUtil:Rect(opts)
     f.ZIndex = opts.ZIndex or self._z
     f.Parent = self.Root
 
-    -- 1. Скругление (UICorner)
+    -- Скругление
     local cr
     if opts.Radius and opts.Radius > 0 then
         cr = Instance.new("UICorner")
@@ -99,7 +99,7 @@ function RenderUtil:Rect(opts)
         cr.Parent = f
     end
 
-    -- 2. Обводка (UIStroke)
+    -- Обводка
     local st
     if opts.Filled == false then
         f.BackgroundTransparency = 1
@@ -111,61 +111,42 @@ function RenderUtil:Rect(opts)
         st.Parent = f
     end
 
-    -- 3. СВЕЧЕНИЕ (GLOW)
-    local glow
-    if opts.Glow then
-        glow = Instance.new("ImageLabel")
-        glow.Name = "Glow"
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://5028857472" -- Текстура мягкой тени
-        glow.ScaleType = Enum.ScaleType.Slice
-        glow.SliceCenter = Rect.new(24, 24, 276, 276)
-
-        -- Цвет свечения (если не указан, берется цвет самого объекта)
-        glow.ImageColor3 = opts.GlowColor or opts.Color or Color3.new(1,1,1)
-        glow.ImageTransparency = opts.GlowTransparency or 0.5
-
-        -- Размер свечения (оно должно быть больше основного объекта)
-        glow.Size = UDim2.new(1, 24, 1, 24)
-        glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        glow.AnchorPoint = Vector2.new(0.5, 0.5)
-
-        -- Слой ниже основного объекта
-        glow.ZIndex = f.ZIndex - 1
-        glow.Parent = f
-    end
-
     return wrap(f, {
         Set = function(p)
-            if p.Pos then f.Position = UDim2.fromOffset(p.Pos.X, p.Pos.Y) end
-            if p.Size then f.Size = UDim2.fromOffset(p.Size.X, p.Size.Y) end
+            if p.Pos then
+                f.Position = UDim2.fromOffset(p.Pos.X, p.Pos.Y)
+            end
+
+            if p.Size then
+                f.Size = UDim2.fromOffset(p.Size.X, p.Size.Y)
+            end
+
             if p.Color then
                 f.BackgroundColor3 = p.Color
                 if st then st.Color = p.Color end
-                -- Обновляем цвет свечения, если не задан отдельный GlowColor
-                if glow and not opts.GlowColor then glow.ImageColor3 = p.Color end
             end
+
             if p.Transparency ~= nil then
                 f.BackgroundTransparency = (opts.Filled == false) and 1 or p.Transparency
                 if st then st.Transparency = p.Transparency end
             end
+
             if p.ZIndex then
                 f.ZIndex = p.ZIndex
-                if glow then glow.ZIndex = p.ZIndex - 1 end
             end
-            if p.Thickness and st then st.Thickness = p.Thickness end
+
+            if p.Thickness and st then
+                st.Thickness = p.Thickness
+            end
+
             if p.Radius ~= nil then
                 if p.Radius > 0 and not cr then
                     cr = Instance.new("UICorner")
                     cr.Parent = f
                 end
-                if cr then cr.CornerRadius = UDim.new(0, p.Radius) end
-            end
-
-            -- Обновление свойств Glow через Set
-            if glow then
-                if p.GlowColor then glow.ImageColor3 = p.GlowColor end
-                if p.GlowTransparency then glow.ImageTransparency = p.GlowTransparency end
+                if cr then
+                    cr.CornerRadius = UDim.new(0, p.Radius)
+                end
             end
         end
     })
