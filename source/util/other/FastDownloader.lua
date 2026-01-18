@@ -58,71 +58,56 @@ function FastDownloader:LoadJSON(path)
     return data
 end
 
---function FastDownloader:Load(path)
---    if self.cache[path] then
---        return self.cache[path]
---    end
---
---    local url = self:Raw(path)
---    local success, code = pcall(function()
---        return game:HttpGet(url)
---    end)
---
---    if not success or not code or code == "" then
---        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
---        return nil
---    end
---
---    local func, err = loadstring(code)
---    if not func then
---        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
---        return nil
---    end
---
---    local module = func()
---    self.cache[path] = module
---    return module
---end
-
-function FastDownloader:Load(path, ...)
-    local hasArgs = select("#", ...) > 0
-
-    if not hasArgs and self.cache[path] then
+function FastDownloader:Load(path)
+    if self.cache[path] then
         return self.cache[path]
     end
 
     local url = self:Raw(path)
-    local okFetch, code = pcall(function()
-        return httpGet(url)
+    local success, code = pcall(function()
+        return game:HttpGet(url)
     end)
 
-    if not okFetch or not code or code == "" then
-        warn("[FastDownloader] ❌ Failed to fetch module:", path, url, code)
-        return nil
-    end
-
-    if type(loadstring) ~= "function" then
-        warn("[FastDownloader] ❌ loadstring is nil (environment doesn't allow it)")
+    if not success or not code or code == "" then
+        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
         return nil
     end
 
     local func, err = loadstring(code)
     if not func then
-        warn("[FastDownloader] ❌ loadstring compile failed for:", path, err)
+        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
         return nil
     end
 
-    local okRun, result = pcall(function()
+    local module = func()
+    self.cache[path] = module
+    return module
+end
+
+function FastDownloader:LoadWithArgs(path, ...)
+    local url = self:Raw(path)
+    local success, code = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success or not code or code == "" then
+        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
+        return nil
+    end
+
+    local func, err = loadstring(code)
+    if not func then
+        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
+        return nil
+    end
+
+    local ok, result = pcall(function()
         return func(...)
     end)
 
-    if not okRun then
+    if not ok then
         warn("[FastDownloader] ❌ module runtime error for:", path, result)
         return nil
-    end
-
-    if not hasArgs then
-        self.cache[path] = result
     end
 
     return result
