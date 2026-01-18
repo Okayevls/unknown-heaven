@@ -9,7 +9,7 @@ local function get(name: string)
 
    svc = game:GetService(name)
    _cache[name] = svc
-   return svc
+   return svc w
 end
 
 setmetatable(Service, {
