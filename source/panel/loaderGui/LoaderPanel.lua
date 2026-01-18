@@ -20,6 +20,10 @@ if Render and Render.new then
         Radius = 15,
         Transparency = 0.2,
         Color = Color3.fromRGB(15, 15, 15),
+
+        Glow = true, -- Включить
+        GlowColor = Color3.fromRGB(120, 90, 255), -- Цвет (обычно такой же, как у объекта)
+        GlowTransparency = 0.4 -- Прозрачность (0 - ярко, 1 - не видно)
     })
 
     --r:Text({
