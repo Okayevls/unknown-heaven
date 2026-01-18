@@ -18,17 +18,17 @@ if Render and Render.new then
         Size = Vector2.new(220, 90),
         Filled = true,
         Radius = 15,
-        Transparency = 0.5,
+        Transparency = 0.2,
         Color = Color3.fromRGB(15, 15, 15),
     })
 
-    r:Text({
-        Pos = Vector2.new(34, 88),
-        Size = Vector2.new(200, 20),
-        Text = "ctx.Render работает",
-        Outline = true,
-        Font = Enum.Font.Gotham,
-    })
+    --r:Text({
+    --    Pos = Vector2.new(34, 88),
+    --    Size = Vector2.new(200, 20),
+    --    Text = "ctx.Render работает",
+    --    Outline = true,
+    --    Font = Enum.Font.Gotham,
+    --})
 end
 
 return Panel
