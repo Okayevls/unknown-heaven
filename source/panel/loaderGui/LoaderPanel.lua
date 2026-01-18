@@ -11,15 +11,16 @@ end
 local Render = ctx.Render
 
 if Render and Render.new then
-    local r = Render.new({ Name = "LoaderPanel_Render" })
+    local r = Render.new({ Name = "Panel1" })
 
     r:Rect({
         Pos = Vector2.new(20, 60),
         Size = Vector2.new(220, 90),
-        Filled = false,
-        Thickness = 2,
-        Radius = 12,
-        Color = Color3.fromRGB(120, 90, 255),
+        Filled = true,
+        Thickness = 1,
+        Radius = 15,
+        BackgroundTransparency = 0.5,
+        Color = Color3.fromRGB(15, 15, 15),
     })
 
     r:Text({
@@ -27,6 +28,7 @@ if Render and Render.new then
         Size = Vector2.new(200, 20),
         Text = "ctx.Render работает",
         Outline = true,
+        Font = Enum.Font.Gotham,
     })
 end
 
