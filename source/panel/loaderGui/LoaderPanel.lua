@@ -1,5 +1,34 @@
--- LoaderPanel.lua (auto-run)
--- При загрузке через inject:Load(...) панель появится сама.
+local Panel = {}
+Panel.__index = Panel
+
+local ctx = ...
+if not ctx then
+    warn("[LoaderPanel] ctx not provided")
+    return Panel
+end
+
+local Inject = ctx.Inject
+local Render = ctx.Render
+
+if Render and Render.new then
+    local r = Render.new({ Name = "LoaderPanel_Render" })
+
+    r:Rect({
+        Pos = Vector2.new(20, 60),
+        Size = Vector2.new(220, 90),
+        Filled = false,
+        Thickness = 2,
+        Radius = 12,
+        Color = Color3.fromRGB(120, 90, 255),
+    })
+
+    r:Text({
+        Pos = Vector2.new(34, 88),
+        Size = Vector2.new(200, 20),
+        Text = "ctx.Render работает",
+        Outline = true,
+    })
+end
 
 
 
