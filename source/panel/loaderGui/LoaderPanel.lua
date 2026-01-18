@@ -14,16 +14,16 @@ if Render and Render.new then
     local r = Render.new({ Name = "Panel1" })
 
     r:Rect({
-        Pos = Vector2.new(20, 60),
-        Size = Vector2.new(220, 90),
-        Filled = true,
-        Radius = 15,
-        Transparency = 0.2,
-        Color = Color3.fromRGB(15, 15, 15),
-
-        Glow = true, -- Включить
-        GlowColor = Color3.fromRGB(120, 90, 255), -- Цвет (обычно такой же, как у объекта)
-        GlowTransparency = 0.4 -- Прозрачность (0 - ярко, 1 - не видно)
+        Pos = Vector2.new(40, 40),
+        Size = Vector2.new(260, 80),
+        Color = Color3.fromRGB(30, 30, 35),
+        Radius = 10,
+        Thickness = 1,
+        StrokeColor = Color3.fromRGB(80, 80, 90),
+        StrokeTransparency = 0.2,
+        Highlight = true,
+        HighlightHeight = 14,
+        HighlightTransparency = 0.9,
     })
 
     --r:Text({
