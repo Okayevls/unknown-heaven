@@ -1,7 +1,7 @@
 local Panel = {}
 Panel.__index = Panel
 
-local ctx = getgenv().HeavenCtx
+local ctx = getgenv().ctx
 
 if not ctx then
     warn("[LoaderPanel] ctx not provided")

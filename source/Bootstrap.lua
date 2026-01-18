@@ -8,11 +8,13 @@ print("Heaven: Step - 2 (Loading Injector...)")
 
 --Utility
 local RenderUtil = inject:Load("source/util/render/RenderUtil.lua")
+local Service = inject:Load("source/util/offsets/Service.lua")
 print("Heaven: Step - 3 (Loading Utility...)")
 
-getgenv().HeavenCtx = {
+getgenv().ctx = {
     Inject = inject,
     Render = RenderUtil,
+    Service = Service,
 }
 
 --Main
