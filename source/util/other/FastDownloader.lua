@@ -13,9 +13,20 @@ function FastDownloader.new(user, repo, branch)
     }, FastDownloader)
 end
 
+local function httpGet(url)
+    if type(game.HttpGet) == "function" then
+        return game:HttpGet(url)
+    end
+    if type(game.HttpGetAsync) == "function" then
+        return game:HttpGetAsync(url)
+    end
+    return HttpService:GetAsync(url)
+end
+
 function FastDownloader:GetLatestSHA()
     local apiUrl = "https://api.github.com/repos/"..self.user.."/"..self.repo.."/commits/"..self.branch
-    local data = HttpService:JSONDecode(game:HttpGet(apiUrl))
+    local raw = httpGet(apiUrl)
+    local data = HttpService:JSONDecode(raw)
     self.sha = data.sha
     return self
 end
@@ -81,26 +92,31 @@ function FastDownloader:Load(path, ...)
     end
 
     local url = self:Raw(path)
-    local success, code = pcall(function()
-        return game:HttpGet(url)
+    local okFetch, code = pcall(function()
+        return httpGet(url)
     end)
 
-    if not success or not code or code == "" then
-        warn("[FastDownloader] ❌ Failed to fetch module:", path, url)
+    if not okFetch or not code or code == "" then
+        warn("[FastDownloader] ❌ Failed to fetch module:", path, url, code)
+        return nil
+    end
+
+    if type(loadstring) ~= "function" then
+        warn("[FastDownloader] ❌ loadstring is nil (environment doesn't allow it)")
         return nil
     end
 
     local func, err = loadstring(code)
     if not func then
-        warn("[FastDownloader] ❌ loadstring failed for:", path, err)
+        warn("[FastDownloader] ❌ loadstring compile failed for:", path, err)
         return nil
     end
 
-    local ok, result = pcall(function()
+    local okRun, result = pcall(function()
         return func(...)
     end)
 
-    if not ok then
+    if not okRun then
         warn("[FastDownloader] ❌ module runtime error for:", path, result)
         return nil
     end
