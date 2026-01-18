@@ -16,7 +16,7 @@ local ctx = {
 }
 
 --Main
-inject:LoadWithArgs("source/panel/loaderGui/LoaderPanel.lua", ctx)
+inject:Load("source/panel/loaderGui/LoaderPanel.lua", ctx)
 print("Heaven: Step - 4 (Loading Main...)")
 
 print("Heaven: Welcome")
