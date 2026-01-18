@@ -17,9 +17,8 @@ if Render and Render.new then
         Pos = Vector2.new(20, 60),
         Size = Vector2.new(220, 90),
         Filled = true,
-        Thickness = 1,
         Radius = 15,
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 0.2,
         Color = Color3.fromRGB(15, 15, 15),
     })
 
