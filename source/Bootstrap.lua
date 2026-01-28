@@ -7,18 +7,20 @@ local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA
 print("Heaven: Step - 2 (Loading Injector...)")
 
 --Utility
-local RenderUtil = inject:Load("source/util/render/RenderUtil.lua")
 local Service = inject:Load("source/util/offsets/Service.lua")
 print("Heaven: Step - 3 (Loading Utility...)")
 
 getgenv().ctx = {
     Inject = inject,
-    Render = RenderUtil,
     Service = Service,
 }
 
 --Main
 inject:Load("source/panel/loaderGui/LoaderPanel.lua")
 print("Heaven: Step - 4 (Loading Main...)")
+
+--Main
+inject:Load("source/panel/mainGui/ClickGui.lua")
+print("Heaven: Step - 5 (Loading Gui...)")
 
 print("Heaven: Welcome")

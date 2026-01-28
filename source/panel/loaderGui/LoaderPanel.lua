@@ -161,7 +161,7 @@ function Panel.new()
 
     local title = mkText(top, "Heaven", 18, true, false)
     title.Size = UDim2.new(1, -120, 0, 22)
-    title.Position = UDim2.fromOffset(0, 6)
+    title.Position = UDim2.fromOffset(0, 4)
 
     local subtitle = mkText(top, "Loader Panel", 13, false, true)
     subtitle.Size = UDim2.new(1, -120, 0, 18)
