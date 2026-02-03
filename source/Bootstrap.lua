@@ -6,15 +6,19 @@ print("Heaven: Step - 2 (Loading Utility...)")
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
 print("Heaven: Step - 3 (Loading Injector...)")
 
---Utility
---local Service = inject:Load("source/util/offsets/Service.lua")
-print("Heaven: Step - 4 (Loading Utility...)")
+local ModuleManager = inject:Load("scripts/ModuleManager.lua")
+local moduleList = inject:Load("scripts/ModuleList.lua")
+print("Heaven: Step - 4 (Loading Modules...)")
+
+local moduleMgr = ModuleManager.new()
 
 getgenv().ctx = {
     Inject = inject,
+    moduleMgr = moduleMgr,
 }
 
---Main
+moduleMgr:RegisterFromList(moduleList)
+
 inject:Load("source/panel/mainGui/ClickGui.lua")
 print("Heaven: Step - 5 (Loading Gui...)")
 

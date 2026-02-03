@@ -5,14 +5,46 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
+local ctx = getgenv().ctx
+local moduleMgr = ctx and ctx.moduleMgr
+
+assert(moduleMgr, "Heaven UI: ctx.moduleMgr not found. Make sure loader creates ModuleManager and puts it in getgenv().ctx")
+
 
 if playerGui:FindFirstChild("HeavenGui") then
     playerGui.HeavenGui:Destroy()
 end
 
 local currentSettings = nil
+local SettingsConnections = {}
+local ThemeConnections = {}
+local function trackThemeConn(c)
+    table.insert(ThemeConnections, c)
+    return c
+end
+
+local function disconnectThemeConns()
+    for i = #ThemeConnections, 1, -1 do
+        local c = ThemeConnections[i]
+        ThemeConnections[i] = nil
+        if c and c.Disconnect then c:Disconnect() end
+    end
+end
+
+local function trackConn(c)
+    table.insert(SettingsConnections, c)
+    return c
+end
+local function disconnectSettingsConns()
+    for i = #SettingsConnections, 1, -1 do
+        local c = SettingsConnections[i]
+        SettingsConnections[i] = nil
+        if c and c.Disconnect then c:Disconnect() end
+    end
+end
 
 local screenGui = Instance.new("ScreenGui")
+screenGui.ResetOnSpawn = false
 screenGui.Name = "HeavenGui"
 screenGui.Parent = playerGui
 screenGui.IgnoreGuiInset = true
@@ -77,11 +109,21 @@ local function clamp01(x) return math.clamp(x, 0, 1) end
 
 local ThemeRegistry = {}
 
+local function compactThemeRegistry()
+    for i = #ThemeRegistry, 1, -1 do
+        local it = ThemeRegistry[i]
+        if not it or not it.obj or not it.obj.Parent then
+            table.remove(ThemeRegistry, i)
+        end
+    end
+end
+
 local function trackTheme(obj, prop, kind)
     table.insert(ThemeRegistry, {obj=obj, prop=prop, kind=kind})
 end
 
 local function applyTheme()
+    compactThemeRegistry()
     for _, item in ipairs(ThemeRegistry) do
         if item.obj and item.obj.Parent then
             if item.kind == "Accent" then
@@ -93,164 +135,13 @@ local function applyTheme()
     end
 end
 
-
-local MODULES = {
-    Combat = {
-        {Name="Aim Assist", Desc="Мягкая помощь при наведении (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Strength", Default=35, Min=0, Max=100, Step=1},
-             {Type="ModeSetting", Name="Mode", Default="Legit", Options={"Legit","Soft","Aggressive"}},
-             {Type="MultiBoolean", Name="Targets", Default={Players=true,NPC=false,Team=false,Players1=true,NPC1=false,Team1=false,Players2=true,NPC2=false,Team2=false}},
-         }},
-        {Name="Clicker", Desc="Авто-клик по нажатию (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="CPS", Default=10, Min=1, Max=25, Step=1},
-             {Type="Boolean", Name="HoldOnly", Default=true},
-             {Type="String", Name="Note", Default="Аккуратно с режимом."},
-         }},
-        {Name="Reach", Desc="Изменение дальности взаимодействия (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Distance", Default=6, Min=3, Max=18, Step=0.5},
-             {Type="ModeSetting", Name="Profile", Default="Smooth", Options={"Smooth","Strict"}},
-             {Type="Boolean", Name="Visualize", Default=true},
-         }},
-        {Name="Criticals", Desc="Критические удары (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="ModeSetting", Name="Type", Default="MiniJump", Options={"MiniJump","Timing","None"}},
-             {Type="Slider", Name="Chance", Default=60, Min=0, Max=100, Step=5},
-             {Type="Boolean", Name="OnlyInAir", Default=false},
-         }},
-    },
-    Movement = {
-        {Name="Speed", Desc="Скорость передвижения (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="WalkSpeed", Default=18, Min=8, Max=40, Step=1},
-             {Type="ModeSetting", Name="Method", Default="Safe", Options={"Safe","Boost","Custom"}},
-             {Type="Boolean", Name="AutoReset", Default=true},
-         }},
-        {Name="Fly", Desc="Свободный полёт (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="FlySpeed", Default=40, Min=10, Max=120, Step=5},
-             {Type="Boolean", Name="NoClip", Default=false},
-             {Type="ModeSetting", Name="Control", Default="WASD", Options={"WASD","Camera","Hybrid"}},
-         }},
-        {Name="BHop", Desc="Авто-прыжки в движении (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Gain", Default=10, Min=0, Max=35, Step=1},
-             {Type="Boolean", Name="OnlyForward", Default=true},
-             {Type="ModeSetting", Name="Style", Default="Soft", Options={"Soft","Hard"}},
-         }},
-        {Name="Step", Desc="Шаг через препятствия (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Height", Default=2, Min=1, Max=8, Step=0.5},
-             {Type="Boolean", Name="Smart", Default=true},
-             {Type="String", Name="Hint", Default="Зависит от коллизий."},
-         }},
-    },
-    Visuals = {
-        {Name="ESP", Desc="Подсветка сущностей (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="MultiBoolean", Name="Show", Default={Boxes=true,Names=true,Distance=false,Health=true}},
-             {Type="Slider", Name="MaxDistance", Default=250, Min=50, Max=1000, Step=25},
-             {Type="ModeSetting", Name="Theme", Default="Heaven", Options={"Heaven","Neutral","Contrast"}},
-         }},
-        {Name="Chams", Desc="Материал/цвет модели (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="ModeSetting", Name="Material", Default="ForceField", Options={"ForceField","Neon","SmoothPlastic"}},
-             {Type="Slider", Name="Opacity", Default=60, Min=5, Max=100, Step=5},
-             {Type="Boolean", Name="TeamCheck", Default=true},
-         }},
-        {Name="Fullbright", Desc="Яркость/освещение (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Brightness", Default=2, Min=0, Max=5, Step=0.1},
-             {Type="Boolean", Name="NoFog", Default=true},
-             {Type="ModeSetting", Name="Preset", Default="Soft", Options={"Soft","Clear","Studio"}},
-         }},
-        {Name="FOV", Desc="Изменение поля зрения (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Value", Default=80, Min=50, Max=120, Step=1},
-             {Type="Boolean", Name="Animate", Default=true},
-             {Type="String", Name="Info", Default="Камера зависит от игры."},
-         }},
-    },
-    Player = {
-        {Name="NoFall", Desc="Снижение урона от падения (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="ModeSetting", Name="Method", Default="Soft", Options={"Soft","Strict"}},
-             {Type="Boolean", Name="OnlyHigh", Default=true},
-             {Type="Slider", Name="Threshold", Default=25, Min=5, Max=80, Step=5},
-         }},
-        {Name="AutoHeal", Desc="Авто-использование хилок (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="AtHP%", Default=45, Min=1, Max=99, Step=1},
-             {Type="ModeSetting", Name="Priority", Default="Safe", Options={"Safe","Fast"}},
-             {Type="Boolean", Name="Sound", Default=true},
-         }},
-        {Name="AntiAFK", Desc="Защита от AFK-кика (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Slider", Name="Interval", Default=60, Min=15, Max=240, Step=5},
-             {Type="ModeSetting", Name="Action", Default="Input", Options={"Input","Camera","Both"}},
-             {Type="String", Name="Note", Default="Не злоупотребляй."},
-         }},
-        {Name="AutoRespawn", Desc="Авто-возрождение/перезагрузка (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Boolean", Name="Fast", Default=false},
-             {Type="ModeSetting", Name="When", Default="OnDeath", Options={"OnDeath","LowHP"}},
-             {Type="Slider", Name="Delay", Default=1, Min=0, Max=10, Step=0.5},
-         }},
-    },
-    Utility = {
-        {Name="Chat Spy", Desc="Лог чата в окне (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="Boolean", Name="Team", Default=true},
-             {Type="Slider", Name="Lines", Default=8, Min=3, Max=20, Step=1},
-             {Type="String", Name="Filter", Default=""},
-         }},
-        {Name="AutoBuy", Desc="Авто-покупки (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="ModeSetting", Name="Item", Default="Potion", Options={"Potion","Ammo","Armor"}},
-             {Type="Slider", Name="Count", Default=1, Min=1, Max=10, Step=1},
-             {Type="Boolean", Name="Confirm", Default=true},
-         }},
-        {Name="Teleports", Desc="Список точек телепорта (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="ModeSetting", Name="Point", Default="Spawn", Options={"Spawn","Shop","Arena","Hill"}},
-             {Type="Boolean", Name="SafeCheck", Default=true},
-             {Type="String", Name="CustomName", Default="MyPoint"},
-         }},
-        {Name="FPS Boost", Desc="Упрощение графики (каркас).",
-         Settings={
-             {Type="Boolean", Name="Enabled", Default=false},
-             {Type="MultiBoolean", Name="Disable", Default={Particles=true,Shadows=true,Decals=false,Water=false}},
-             {Type="Slider", Name="Quality", Default=2, Min=0, Max=10, Step=1},
-             {Type="ModeSetting", Name="Preset", Default="Balanced", Options={"Max","Balanced","Minimal"}},
-         }},
-    },
-}
-
-local TAB_ORDER = {"Combat","Movement","Visuals","Player","Utility","Theme"}
+local TAB_ORDER = moduleMgr:GetCategories()
+table.sort(TAB_ORDER)
+if not table.find(TAB_ORDER, "Theme") then
+    table.insert(TAB_ORDER, "Theme")
+end
 
 local State = {
-    Modules = {},
     Theme = {Accent = Theme.Accent},
     LastUpdate = "19.01.2026",
     User = {
@@ -260,29 +151,6 @@ local State = {
     }
 }
 
-for tabName, list in pairs(MODULES) do
-    State.Modules[tabName] = State.Modules[tabName] or {}
-    for _, m in ipairs(list) do
-        local settings = {}
-        for _, s in ipairs(m.Settings) do
-            if s.Type == "MultiBoolean" then
-                local copy = {}
-                for k,v in pairs(s.Default or {}) do copy[k]=v end
-                settings[s.Name] = copy
-            else
-                settings[s.Name] = s.Default
-            end
-        end
-        State.Modules[tabName][m.Name] = {
-            Enabled = false,
-            Bind = nil,
-            Settings = settings,
-            Desc = m.Desc,
-            Definition = m,
-        }
-    end
-end
-
 local dim = mk("Frame", {
     Name="Dim",
     BackgroundColor3=Color3.fromRGB(0,0,0),
@@ -291,6 +159,8 @@ local dim = mk("Frame", {
     Visible=true,
 }, screenGui)
 dim.ZIndex = 1
+dim.Active = true
+dim.Selectable = true
 
 local main = mk("Frame", {
     Name="Main",
@@ -515,13 +385,26 @@ addPadding(modulesArea, 2)
 local MODULES_AREA_NORMAL_SIZE = UDim2.new(1, -312, 1, 0)
 local MODULES_AREA_FULL_SIZE   = UDim2.new(1, 0, 1, 0)
 
+
+local function clearSettingsUI()
+    disconnectSettingsConns()
+    for _, c in ipairs(settingsContainer:GetChildren()) do
+        if c:IsA("GuiObject") then c:Destroy() end
+    end
+end
+
 local function closeSettings()
     settingsPane.Visible = false
     settingsCloseOverlay.Visible = false
+    settingsCloseOverlay.Active = false
     currentSettings = nil
+    clearSettingsUI()
 end
 
 settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
+settingsPane.ZIndex = content.ZIndex + 10
+settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
+settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
 
 local function createMiniToggle(parent)
     local root = mk("Frame", {BackgroundColor3=Theme.Panel, Size=UDim2.fromOffset(38, 20)}, parent)
@@ -600,11 +483,37 @@ local function bindToText(bind)
     return "None"
 end
 
+local UIRefreshBind = {}
 local activeBindTarget = nil
+local BindMap = {} -- key -> {tab=, module=}
+local function bindKey(b)
+    if not b then return nil end
+    return ("%s:%s"):format(b.kind, b.code.Name)
+end
+
+local function rebuildBindMap()
+    BindMap = {}
+    for _, tabName in ipairs(moduleMgr:GetCategories()) do
+        local defs = moduleMgr:GetModuleDefs(tabName)
+        for _, def in ipairs(defs) do
+            local st = moduleMgr:GetState(tabName, def.Name)
+            if st and st.Bind then
+                local k = bindKey(st.Bind)
+                if k then BindMap[k] = {tab=tabName, module=def.Name} end
+            end
+        end
+    end
+end
+
+rebuildBindMap()
 
 local function setBind(tab, moduleName, bind)
-    State.Modules[tab][moduleName].Bind = bind
+    moduleMgr:SetBind(tab, moduleName, bind)
+    rebuildBindMap()
+    local rf = UIRefreshBind[tab] and UIRefreshBind[tab][moduleName]
+    if rf then rf() end
 end
+
 
 local function isDeleteBindInput(input)
     return input.KeyCode == Enum.KeyCode.Delete
@@ -623,18 +532,6 @@ local function inputToBind(input)
         return {kind="UserInputType", code=input.UserInputType}
     end
     return nil
-end
-
-local function bindsEqual(a,b)
-    if a==nil and b==nil then return true end
-    if not a or not b then return false end
-    return a.kind==b.kind and a.code==b.code
-end
-
-local function clearSettingsUI()
-    for _, c in ipairs(settingsContainer:GetChildren()) do
-        if c:IsA("GuiObject") then c:Destroy() end
-    end
 end
 
 local function settingRowBase(name, hint)
@@ -676,9 +573,12 @@ local function addBooleanSetting(tab, moduleName, sDef)
         Size=UDim2.fromOffset(40, 20),
     }, row)
 
-    local tgl = createMiniToggle(holder)
-    tgl:Set(State.Modules[tab][moduleName].Settings[sDef.Name])
-    tgl.OnChanged = function(v) State.Modules[tab][moduleName].Settings[sDef.Name] = v end
+    local tgl, _tglRoot = createMiniToggle(holder)
+    local v = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
+    tgl:Set(v == true)
+    tgl.OnChanged = function(v)
+        moduleMgr:SetSetting(tab, moduleName, sDef.Name, v)
+    end
 end
 
 local function addSliderSetting(tab, moduleName, sDef)
@@ -717,41 +617,61 @@ local function addSliderSetting(tab, moduleName, sDef)
         local step = sDef.Step or 1
         v = math.clamp(v, sDef.Min, sDef.Max)
         v = math.floor((v - sDef.Min)/step + 0.5)*step + sDef.Min
-        State.Modules[tab][moduleName].Settings[sDef.Name] = v
+        moduleMgr:SetSetting(tab, moduleName, sDef.Name, v)
         valLabel.Text = tostring(v)
-        local alpha = (v - sDef.Min) / (sDef.Max - sDef.Min)
+        local denom = (sDef.Max - sDef.Min)
+        local alpha = (denom == 0) and 0 or ((v - sDef.Min) / denom)
+
         fill.Size = UDim2.new(alpha,0,1,0)
         knob.Position = UDim2.new(alpha,0,0.5,0)
     end
-    setValue(State.Modules[tab][moduleName].Settings[sDef.Name])
+
+    local function setUI(v)
+        local step = sDef.Step or 1
+        v = math.clamp(tonumber(v) or sDef.Min, sDef.Min, sDef.Max)
+        v = math.floor((v - sDef.Min)/step + 0.5)*step + sDef.Min
+
+        valLabel.Text = tostring(v)
+        local denom = (sDef.Max - sDef.Min)
+        local alpha = (denom == 0) and 0 or ((v - sDef.Min) / denom)
+
+        fill.Size = UDim2.new(alpha,0,1,0)
+        knob.Position = UDim2.new(alpha,0,0.5,0)
+    end
+
+    local initial = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
+    setUI(initial)
+
+    --setValue(moduleMgr:GetSetting(tab, moduleName, sDef.Name))
 
     local dragging = false
     local function updateFromX(x)
         local abs = bar.AbsolutePosition.X
         local w = bar.AbsoluteSize.X
+        if w <= 0 then return end
         local a = clamp01((x - abs) / w)
         setValue(sDef.Min + a*(sDef.Max - sDef.Min))
     end
 
-    bar.InputBegan:Connect(function(i)
+    trackConn(bar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             updateFromX(i.Position.X)
             tween(knob, 0.12, {Size = UDim2.fromOffset(16,16)})
         end
-    end)
-    bar.InputEnded:Connect(function(i)
+    end))
+    trackConn(bar.InputEnded:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
             tween(knob, 0.12, {Size = UDim2.fromOffset(14,14)})
         end
-    end)
+    end))
 
-    UserInputService.InputChanged:Connect(function(i)
+    trackConn(UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             updateFromX(i.Position.X)
         end
-    end)
+    end))
 end
 
 local function addMultiBooleanSetting(tab, moduleName, sDef)
@@ -776,7 +696,8 @@ local function addMultiBooleanSetting(tab, moduleName, sDef)
         StartCorner = Enum.StartCorner.TopLeft,
     }, wrap)
 
-    local values = State.Modules[tab][moduleName].Settings[sDef.Name]
+    local values = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
+    if type(values) ~= "table" then values = {} end
 
     local function makeChip(label)
         local chip = mk("TextButton", {
@@ -805,6 +726,7 @@ local function addMultiBooleanSetting(tab, moduleName, sDef)
 
         chip.MouseButton1Click:Connect(function()
             values[label] = not values[label]
+            moduleMgr:SetSetting(tab, moduleName, sDef.Name, values)
             render()
         end)
 
@@ -812,7 +734,8 @@ local function addMultiBooleanSetting(tab, moduleName, sDef)
     end
 
     local keys = {}
-    for k in pairs(sDef.Default) do table.insert(keys, k) end
+    local defaults = sDef.Default or {}
+    for k in pairs(defaults) do table.insert(keys, k) end
     table.sort(keys)
     for _, key in ipairs(keys) do makeChip(key) end
 
@@ -856,7 +779,7 @@ local function addStringSetting(tab, moduleName, sDef)
         BackgroundColor3=Theme.Panel2,
         Position=UDim2.new(0,0,0,32),
         Size=UDim2.new(1,0,0,20),
-        Text=tostring(State.Modules[tab][moduleName].Settings[sDef.Name] or ""),
+        Text=tostring(moduleMgr:GetSetting(tab, moduleName, sDef.Name) or ""),
         ClearTextOnFocus=false,
         Font=Enum.Font.GothamMedium,
         TextSize=12,
@@ -867,7 +790,7 @@ local function addStringSetting(tab, moduleName, sDef)
     addStroke(box, 0.35)
 
     box.FocusLost:Connect(function()
-        State.Modules[tab][moduleName].Settings[sDef.Name] = box.Text
+        moduleMgr:SetSetting(tab, moduleName, sDef.Name, box.Text)
     end)
 end
 
@@ -896,20 +819,27 @@ local function addModeSetting(tab, moduleName, sDef)
     local right = tinyButton(holder, ">"); right.Size = UDim2.fromOffset(28,22); right.Position = UDim2.fromOffset(132,0)
 
     local options = sDef.Options or {}
-    local current = State.Modules[tab][moduleName].Settings[sDef.Name]
+    if #options == 0 then return end
+    local current = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
     local idx = table.find(options, current) or 1
 
-    local function refresh()
-        State.Modules[tab][moduleName].Settings[sDef.Name] = options[idx]
+    local function refreshUI()
         mid.Text = tostring(options[idx])
     end
-    refresh()
+
+    local function commit()
+        moduleMgr:SetSetting(tab, moduleName, sDef.Name, options[idx])
+    end
+
+    refreshUI()
+    commit()
 
     left.MouseButton1Click:Connect(function()
         idx -= 1
         if idx < 1 then idx = #options end
         tween(mid, 0.10, {BackgroundTransparency=0.15})
-        refresh()
+        refreshUI()
+        commit()
         tween(mid, 0.10, {BackgroundTransparency=0})
     end)
 
@@ -917,7 +847,8 @@ local function addModeSetting(tab, moduleName, sDef)
         idx += 1
         if idx > #options then idx = 1 end
         tween(mid, 0.10, {BackgroundTransparency=0.15})
-        refresh()
+        refreshUI()
+        commit()
         tween(mid, 0.10, {BackgroundTransparency=0})
     end)
 end
@@ -926,13 +857,17 @@ local function renderSettings(tab, moduleName)
     clearSettingsUI()
     settingsPane.Visible = true
     settingsCloseOverlay.Visible = true
+    settingsCloseOverlay.Active = true
 
     currentSettings = {tab = tab, module = moduleName}
 
     settingsTitle.Text = ("Settings • %s"):format(moduleName)
     --settingsSub.Text = State.Modules[tab][moduleName].Desc
 
-    for _, sDef in ipairs(State.Modules[tab][moduleName].Definition.Settings) do
+    local st = moduleMgr:GetState(tab, moduleName)
+    if not st then return end
+
+    for _, sDef in ipairs(st.Definition.Settings) do
         if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
         elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
         elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
@@ -942,7 +877,12 @@ local function renderSettings(tab, moduleName)
     end
 end
 
+local UIToggles = {}
+
 local function moduleCard(tabName, mName, desc)
+    local st = moduleMgr:GetState(tabName, mName)
+    if not st then return function() end end
+
     local card = mk("Frame", {BackgroundColor3=Theme.Panel2, Size=UDim2.new(1,0,0,72)}, modulesArea)
     addCorner(card, Theme.RoundSmall)
     addStroke(card, 0.2)
@@ -977,7 +917,7 @@ local function moduleCard(tabName, mName, desc)
         Position=UDim2.new(1,0,0.5,-10),
         Size=UDim2.fromOffset(40, 20),
     }, card)
-    local tgl = createMiniToggle(toggleHolder)
+    local tgl, _tglRoot = createMiniToggle(toggleHolder)
 
     local bindBtn = tinyButton(card, "Bind")
     bindBtn.AnchorPoint = Vector2.new(1,0)
@@ -997,15 +937,19 @@ local function moduleCard(tabName, mName, desc)
     }, card)
 
     local function refreshBind()
-        bindLabel.Text = bindToText(State.Modules[tabName][mName].Bind)
+        local st2 = moduleMgr:GetState(tabName, mName)
+        bindLabel.Text = bindToText(st2 and st2.Bind)
     end
+
     refreshBind()
 
-    tgl:Set(State.Modules[tabName][mName].Enabled)
+    tgl:Set(st.Enabled)
     tgl.OnChanged = function(v)
-        State.Modules[tabName][mName].Enabled = v
+        moduleMgr:SetEnabled(tabName, mName, v)
     end
-    State.Modules[tabName][mName]._uiToggle = tgl
+
+    UIToggles[tabName] = UIToggles[tabName] or {}
+    UIToggles[tabName][mName] = tgl
 
     card.MouseEnter:Connect(function() tween(card, 0.12, {BackgroundColor3 = Theme.Panel}) end)
     card.MouseLeave:Connect(function() tween(card, 0.12, {BackgroundColor3 = Theme.Panel2}) end)
@@ -1036,6 +980,8 @@ local function moduleCard(tabName, mName, desc)
         bindLabel.Text = "Press..."
     end)
 
+    UIRefreshBind[tabName] = UIRefreshBind[tabName] or {}
+    UIRefreshBind[tabName][mName] = refreshBind
     return refreshBind
 end
 
@@ -1043,10 +989,15 @@ local tabButtons = {}
 local activeTab = nil
 
 local function clearModulesUI()
+    disconnectThemeConns()
+
     for _, c in ipairs(modulesArea:GetChildren()) do
         if c:IsA("GuiObject") then c:Destroy() end
     end
+    for k in pairs(UIRefreshBind) do UIRefreshBind[k] = nil end
+    compactThemeRegistry()
 end
+
 
 local function themePresetTile(parent, name, col, onPick)
     local wrap = mk("Frame", {
@@ -1127,17 +1078,17 @@ local function themePresetTile(parent, name, col, onPick)
         end
     end
 
-    tile.MouseEnter:Connect(function() setHover(true) end)
-    tile.MouseLeave:Connect(function() setHover(false) end)
+    trackThemeConn(tile.MouseEnter:Connect(function() setHover(true) end))
+    trackThemeConn(tile.MouseLeave:Connect(function() setHover(false) end))
 
-    tile.MouseButton1Down:Connect(function()
+    trackThemeConn(tile.MouseButton1Down:Connect(function()
         tween(tile, 0.08, {Size = UDim2.new(1, 0, 0, 70)})
-    end)
-    tile.MouseButton1Up:Connect(function()
+    end))
+    trackThemeConn(tile.MouseButton1Up:Connect(function()
         tween(tile, 0.08, {Size = UDim2.new(1, 0, 0, 72)})
-    end)
+    end))
 
-    tile.MouseButton1Click:Connect(onPick)
+    trackThemeConn(tile.MouseButton1Click:Connect(onPick))
 
     return wrap, check
 end
@@ -1214,25 +1165,25 @@ local function makeMiniSlider(parent, title, startValue01, onChanged)
         set01((x - abs) / w)
     end
 
-    bar.InputBegan:Connect(function(i)
+    trackThemeConn(bar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             updateFromX(i.Position.X)
             tween(knob, 0.12, {Size = UDim2.fromOffset(16,16)})
         end
-    end)
-    bar.InputEnded:Connect(function(i)
+    end))
+    trackThemeConn(bar.InputEnded:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
             tween(knob, 0.12, {Size = UDim2.fromOffset(14,14)})
         end
-    end)
+    end))
 
-    UserInputService.InputChanged:Connect(function(i)
+    trackThemeConn(UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             updateFromX(i.Position.X)
         end
-    end)
+    end))
 
     set01(value01)
 
@@ -1385,7 +1336,7 @@ local function renderThemeTab()
         cellW = math.clamp(cellW, 78, 120)
         grid.CellSize = UDim2.fromOffset(cellW, 98)
     end
-    presets:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateGridCell)
+    trackThemeConn(presets:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateGridCell))
     task.defer(updateGridCell)
 
     for i, p in ipairs(presetList) do
@@ -1405,7 +1356,7 @@ local function renderThemeTab()
         if picked then setCheckByIndex(picked) else clearChecks() end
     end
 
-    resetBtn.MouseButton1Click:Connect(function()
+    trackThemeConn(resetBtn.MouseButton1Click:Connect(function()
         local col = Color3.fromRGB(140,200,255)
         applyAccent(col)
         local picked = nil
@@ -1413,7 +1364,7 @@ local function renderThemeTab()
             if it.col == col then picked = i break end
         end
         if picked then setCheckByIndex(picked) else clearChecks() end
-    end)
+    end))
 
     local customCard = mk("Frame", {
         BackgroundColor3 = Theme.Panel2,
@@ -1476,8 +1427,8 @@ local function renderThemeTab()
     addCorner(applyBtn, 10)
     addStroke(applyBtn, 0.2)
 
-    applyBtn.MouseEnter:Connect(function() tween(applyBtn, 0.12, {BackgroundColor3 = Theme.Panel2}) end)
-    applyBtn.MouseLeave:Connect(function() tween(applyBtn, 0.12, {BackgroundColor3 = Theme.Panel}) end)
+    trackThemeConn(applyBtn.MouseEnter:Connect(function() tween(applyBtn, 0.12, {BackgroundColor3 = Theme.Panel2}) end))
+    trackThemeConn(applyBtn.MouseLeave:Connect(function() tween(applyBtn, 0.12, {BackgroundColor3 = Theme.Panel}) end))
 
     local r01, g01, b01 = Theme.Accent.R, Theme.Accent.G, Theme.Accent.B
     local function updatePreview()
@@ -1489,15 +1440,15 @@ local function renderThemeTab()
     makeMiniSlider(customCard, "Green", g01, function(v) g01 = v; updatePreview() end)
     makeMiniSlider(customCard, "Blue",  b01, function(v) b01 = v; updatePreview() end)
 
-    applyBtn.MouseButton1Click:Connect(function()
+    trackThemeConn(applyBtn.MouseButton1Click:Connect(function()
         applyAccent(Color3.new(r01, g01, b01))
         clearChecks()
-    end)
+    end))
 
-    customJumpBtn.MouseButton1Click:Connect(function()
+    trackThemeConn(customJumpBtn.MouseButton1Click:Connect(function()
         local y = customCard.AbsolutePosition.Y - modulesArea.AbsolutePosition.Y + modulesArea.CanvasPosition.Y
         modulesArea.CanvasPosition = Vector2.new(modulesArea.CanvasPosition.X, math.max(0, y))
-    end)
+    end))
 end
 
 
@@ -1523,8 +1474,11 @@ local function renderTab(tabName)
     end
 
     clearModulesUI()
-    for _, m in ipairs(MODULES[tabName]) do
-        moduleCard(tabName, m.Name, m.Desc)
+    UIToggles[tabName] = {} -- сбрасываем карту тумблеров под вкладку
+
+    local defs = moduleMgr:GetModuleDefs(tabName)
+    for _, def in ipairs(defs) do
+        moduleCard(tabName, def.Name, def.Desc or "")
     end
 end
 
@@ -1552,7 +1506,25 @@ for _, tabName in ipairs(TAB_ORDER) do
     tabButtons[tabName] = b
 end
 
-renderTab("Combat")
+local first = TAB_ORDER[1] or "Theme"
+renderTab(first)
+
+moduleMgr.Changed:Connect(function(payload)
+    if payload.kind == "Enabled" then
+        local tgl = UIToggles[payload.category] and UIToggles[payload.category][payload.moduleName]
+        if tgl then
+            tgl:Set(payload.value == true)
+        end
+        return
+    end
+
+    if payload.kind == "Bind" then
+        rebuildBindMap()
+        local rf = UIRefreshBind[payload.category] and UIRefreshBind[payload.category][payload.moduleName]
+        if rf then rf() end
+        return
+    end
+end)
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
@@ -1578,24 +1550,18 @@ UserInputService.InputBegan:Connect(function(input, gpe)
         return
     end
 
-    for tabName, mods in pairs(State.Modules) do
-        for moduleName, info in pairs(mods) do
-            local b = info.Bind
-            if b then
-                if b.kind == "KeyCode" and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == b.code then
-                    info.Enabled = not info.Enabled
-                    if info._uiToggle then
-                        info._uiToggle:Set(info.Enabled)
-                    end
-                elseif b.kind == "UserInputType" and input.UserInputType == b.code then
-                    info.Enabled = not info.Enabled
-                    if info._uiToggle then
-                        info._uiToggle:Set(info.Enabled)
-                    end
-                end
-            end
+    local hitBind = inputToBind(input)
+    local k = bindKey(hitBind)
+    local info = k and BindMap[k]
+    if info then
+        moduleMgr:Toggle(info.tab, info.module)
+        local st2 = moduleMgr:GetState(info.tab, info.module)
+        local tgl = UIToggles[info.tab] and UIToggles[info.tab][info.module]
+        if tgl and st2 then
+            tgl:Set(st2.Enabled)
         end
     end
+
 end)
 
 do
