@@ -5,8 +5,8 @@ local discordLink = "https://discord.gg/R7ABPb2f"
 local http = game:GetService("HttpService")
 local startTime = os.clock()
 
-local loggerRaw = game:HttpGet("https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/Logger.lua")
-local LoggerClass = getgenv().LoggerInstance or loadstring(game:HttpGet(loggerRaw))()
+local loggerUrl = "https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/Logger.lua"
+local LoggerClass = getgenv().LoggerInstance or loadstring(game:HttpGet(loggerUrl))()
 local log = LoggerClass.new("[Heaven]")
 
 log:Info("Starting bootstrapper...")
