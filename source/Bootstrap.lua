@@ -1,10 +1,14 @@
-local projectName = getgenv().Project or "Unknown111"
+local project = getgenv().Project
 local sha = getgenv().LatestSHA or "main"
 
-if not projectName or projectName == "Unknown111" then
-    warn(" [Heaven Error]: Project name is not defined!")
-    return
+local http = game:GetService("HttpService")
+local api = "https://api.github.com/repos/Okayevls/unknown-heaven/contents/scripts"
+local _, folders = pcall(function() return http:JSONDecode(game:HttpGet(api)) end)
+local exists = false
+for _, item in ipairs(folders or {}) do
+    if item.type == "dir" and item.name == project then exists = true break end
 end
+if not exists then return warn("[Heaven]: Project '"..tostring(project).."' not found!") end
 
 print("Heaven: Step - 1 (Loading Data...)")
 
@@ -14,7 +18,7 @@ print("Heaven: Step - 2 (Loading Utility...)")
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
 print("Heaven: Step - 3 (Loading Injector...)")
 
-local listPath = string.format("scripts/%s/ModuleRegistryList.lua", projectName)
+local listPath = string.format("scripts/%s/ModuleRegistryList.lua", project)
 local moduleRegistryList = inject:Load(listPath)
 
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
