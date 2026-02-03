@@ -3,21 +3,19 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Папка для ESP
 local espFolder = Instance.new("Folder")
 espFolder.Name = "HeavenESP_Global"
 espFolder.Parent = CoreGui
 
-local espData = {}         -- [player] = {Highlight=..., Billboard=..., Label=..., Character=..., Humanoid=...}
-local _connections = {}    -- общие коннекты (RenderStepped, PlayerAdded/Removing и т.п.)
-local _charCons = {}       -- [player] = {RBXScriptConnection,...} коннекты персонажа
+local espData = {}
+local _connections = {}
+local _charCons = {}
 
 local ESP_SETTINGS = {
     Color = Color3.fromRGB(255, 255, 255),
 }
 
--- Восстановление исходного DisplayDistanceType
-local originalNameType = {} -- [Humanoid] = Enum.HumanoidDisplayDistanceType
+local originalNameType = {}
 
 local function updateOriginalNames(hide)
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -55,12 +53,11 @@ local function clearPlrESP(plr)
     local data = espData[plr]
     if not data then return end
 
-    -- ВАЖНО: НЕ трогаем data.Character (персонажа)
     if data.Highlight and data.Highlight.Parent then
         data.Highlight:Destroy()
     end
     if data.Billboard and data.Billboard.Parent then
-        data.Billboard:Destroy() -- Label удалится вместе с BillboardGui
+        data.Billboard:Destroy()
     end
 
     espData[plr] = nil
@@ -87,7 +84,6 @@ local function createESP(plr)
     local head = char:FindFirstChild("Head") or root
     local hum = char:FindFirstChildOfClass("Humanoid")
 
-    -- Хайлайт
     local highlight = Instance.new("Highlight")
     highlight.Name = plr.Name .. "_Highlight"
     highlight.Adornee = char
@@ -97,7 +93,6 @@ local function createESP(plr)
     highlight.Enabled = false
     highlight.Parent = espFolder
 
-    -- Billboard
     local billboard = Instance.new("BillboardGui")
     billboard.Name = plr.Name .. "_Billboard"
     billboard.Adornee = head
@@ -114,7 +109,7 @@ local function createESP(plr)
     label.BackgroundTransparency = 1
     label.BackgroundColor3 = Color3.new(0, 0, 0)
     label.TextColor3 = ESP_SETTINGS.Color
-    label.Font = Enum.Font.GothamBold
+    label.Font = Enum.Font.Gotham
     label.BorderSizePixel = 0
     label.Parent = billboard
 
@@ -129,7 +124,7 @@ local function createESP(plr)
         Highlight = highlight,
         Billboard = billboard,
         Label = label,
-        Character = char,   -- просто ссылка, НЕ уничтожаем
+        Character = char,
         Humanoid = hum,
     }
 end
@@ -137,7 +132,6 @@ end
 local function ensureESP(plr)
     if plr == LocalPlayer then return end
 
-    -- если нет персонажа — чистим ESP
     if not plr.Character or not plr.Character.Parent then
         clearPlrESP(plr)
         return
@@ -149,14 +143,12 @@ local function ensureESP(plr)
         return
     end
 
-    -- если персонаж сменился — пересоздаем, но НЕ удаляем сам персонаж
     if data.Character ~= plr.Character then
         clearPlrESP(plr)
         createESP(plr)
         return
     end
 
-    -- если GUI/instances исчезли (например, CoreGui чистили) — пересоздаем
     if (not data.Highlight or not data.Highlight.Parent) or (not data.Billboard or not data.Billboard.Parent) then
         clearPlrESP(plr)
         createESP(plr)
@@ -170,20 +162,16 @@ local function hookPlayer(plr)
     disconnectCharCons(plr)
     _charCons[plr] = {}
 
-    -- Когда появился персонаж
     table.insert(_charCons[plr], plr.CharacterAdded:Connect(function()
-        -- небольшая задержка чтобы части успели появиться
         task.defer(function()
             ensureESP(plr)
         end)
     end))
 
-    -- Когда персонаж удаляется (смерть/респавн)
     table.insert(_charCons[plr], plr.CharacterRemoving:Connect(function()
         clearPlrESP(plr)
     end))
 
-    -- если уже есть персонаж
     if plr.Character then
         ensureESP(plr)
     end
@@ -205,13 +193,11 @@ return {
     },
 
     OnEnable = function(ctx)
-        -- очистка на всякий
         for plr, _ in pairs(espData) do
             clearPlrESP(plr)
         end
         espData = {}
 
-        -- подписки на игроков
         for _, plr in ipairs(Players:GetPlayers()) do
             hookPlayer(plr)
         end
@@ -225,7 +211,6 @@ return {
             clearPlrESP(plr)
         end))
 
-        -- основной апдейт
         table.insert(_connections, RunService.RenderStepped:Connect(function()
             local showBox = ctx:GetSetting("Show Box")
             local showName = ctx:GetSetting("Show Name")
@@ -251,7 +236,6 @@ return {
                     continue
                 end
 
-                -- если вдруг HRP пропал
                 if not char:FindFirstChild("HumanoidRootPart") then
                     data.Highlight.Enabled = false
                     data.Billboard.Enabled = false
@@ -271,7 +255,6 @@ return {
     end,
 
     OnDisable = function(ctx)
-        -- отключаем коннекты
         for _, conn in ipairs(_connections) do
             if typeof(conn) == "RBXScriptConnection" then
                 conn:Disconnect()
@@ -279,12 +262,10 @@ return {
         end
         _connections = {}
 
-        -- отключаем коннекты персонажей
         for plr, _ in pairs(_charCons) do
             disconnectCharCons(plr)
         end
 
-        -- возвращаем оригинальные неймтеги
         updateOriginalNames(false)
         for hum, oldType in pairs(originalNameType) do
             if hum and hum.Parent then
@@ -292,8 +273,7 @@ return {
             end
             originalNameType[hum] = nil
         end
-
-        -- чистим ESP объекты (НЕ персонажей!)
+        
         for plr, _ in pairs(espData) do
             clearPlrESP(plr)
         end
