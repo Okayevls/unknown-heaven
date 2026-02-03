@@ -1,6 +1,5 @@
 local project = getgenv().Project
 local sha = getgenv().LatestSHA or "main"
-
 local discordLink = "https://discord.gg/R7ABPb2f"
 
 local http = game:GetService("HttpService")
@@ -16,34 +15,35 @@ if not exists then
     return
 end
 
-print("Heaven: Step - 1 (Loading Data...)")
+print("Heaven: Step - (Loading Data...)")
 
 local downloader = loadstring(game:HttpGet("https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/FastDownloader.lua"))()
-print("Heaven: Step - 2 (Loading Utility...)")
+print("Heaven: Step - (Loading Utility...)")
 
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
-print("Heaven: Step - 3 (Loading Injector...)")
+print("Heaven: Step - (Loading Module...)")
 
-local listPath = string.format("scripts/%s/ModuleRegistryList.lua", project)
-local moduleRegistryList = inject:Load(listPath)
+local ModuleScanner = inject:Load("source/util/module/ModuleScanner.lua")
+local scanner = ModuleScanner.new("Okayevls", "unknown-heaven")
+local moduleFiles = scanner:GetModules(project)
 
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
 
 local moduleMgr = ModuleManager.new()
 
-local reg = ModuleRegistryManager.new(moduleRegistryList)
+local reg = ModuleRegistryManager.new(moduleFiles)
 
 local listByCategory = reg:LoadAll(function(path) return inject:Load(path) end)
 moduleMgr:RegisterFromList(listByCategory)
 
-print("Heaven: Step - 4 (Loading Modules...)")
-
+print("Heaven: Step - (Loading Getter...)")
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
 }
 
+print("Heaven: Step - (Loading Gui...)")
 inject:Load("source/panel/mainGui/ClickGui.lua")
-print("Heaven: Step - 5 (Loading Gui...)")
+
 print("Heaven: Welcome")

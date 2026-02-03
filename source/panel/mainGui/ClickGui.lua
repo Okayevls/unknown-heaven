@@ -303,9 +303,6 @@ local settingsCloseOverlay = mk("TextButton", {
     Size=UDim2.fromScale(1,1),
 }, content)
 
---settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
---settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
-
 local settingsPane = mk("Frame", {
     Name="SettingsPane",
     BackgroundColor3=Theme.Panel2,
