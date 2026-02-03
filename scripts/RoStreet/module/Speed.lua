@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
-local event = getgenv().ctx.e.new("Speed")
+local RunService = game:GetService("RunService")
+local connection = nil
 
 return {
     Name = "Speed",
@@ -8,29 +9,27 @@ return {
     Category = "Movement",
 
     Settings = {
-        { Type = "Slider", Name = "Multiplier", Default = 145, Min = 0, Max = 300, Step = 1 },
+        { Type = "Slider", Name = "MultiplierXZ", Default = 145, Min = 0, Max = 300, Step = 1 },
+        { Type = "Slider", Name = "MultiplierY", Default = 0.9, Min = 0, Max = 2, Step = 0.1 },
     },
 
-    EUpdate = function(self)
-        local char = Players.LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local humanoid = char and char:FindFirstChild("Humanoid")
-
-        if hrp and humanoid then
-            local speedVal = getgenv().ctx.moduleMgr:GetSetting("Movement", "Speed", "Multiplier")
-            local dir = humanoid.MoveDirection
-
-            if dir.Magnitude > 0 then
-                hrp.Velocity = Vector3.new(dir.X * speedVal, hrp.Velocity.Y, dir.Z * speedVal)
-            end
-        end
-    end,
-
     OnEnable = function(ctx)
-        event:Enable(ctx.Module.Definition)
+        connection = RunService.Heartbeat:Connect(function()
+            local currentHrp = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local humanoid = Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+            local dir = humanoid.MoveDirection
+            local powerXZ = ctx:GetSetting("MultiplierXZ")
+            local powerY = ctx:GetSetting("MultiplierY")
+            if dir.Magnitude > 0 then
+                currentHrp.Velocity = Vector3.new(dir.X * powerXZ, currentHrp.Velocity.Y * powerY, dir.Z * powerXZ)
+            end
+        end)
     end,
 
     OnDisable = function(ctx)
-        event:Disable()
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
     end,
 }

@@ -59,13 +59,9 @@ moduleMgr:RegisterFromList(listByCategory)
 
 log:Info("Successfully registered all modules.")
 
-log:Info("Registering event manager...")
-local eventManager = inject:Load("source/util/offset/EventManager.lua")
-
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
-    e = eventManager,
     DebugMode = true
 }
 
