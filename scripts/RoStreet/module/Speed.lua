@@ -1,5 +1,5 @@
 local Players = game:GetService("Players")
-getgenv().ctx.e.new("Speed")
+local event = getgenv().ctx.e.new("Speed")
 
 return {
     Name = "Speed",
@@ -11,27 +11,26 @@ return {
         { Type = "Slider", Name = "Multiplier", Default = 145, Min = 0, Max = 300, Step = 1 },
     },
 
-    OnEnable = function(ctx)
-        local speed = ctx:GetSetting("PowerLevel")
-        function self:EUpdate()
-            if not Players.LocalPlayer.Character then return end
-            local currentHrp = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local humanoid = Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-            if not currentHrp or not humanoid then return end
+    EUpdate = function(self)
+        local char = Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local humanoid = char and char:FindFirstChild("Humanoid")
 
+        if hrp and humanoid then
+            local speedVal = getgenv().ctx.moduleMgr:GetSetting("Movement", "Speed", "Multiplier")
             local dir = humanoid.MoveDirection
 
-            if self.Enabled then
-                if dir.Magnitude > 0 then
-                    currentHrp.Velocity = Vector3.new(dir.X * speed.SpeedMultiplier, currentHrp.Velocity.Y * 0.9, dir.Z * speed.SpeedMultiplier)
-                end
+            if dir.Magnitude > 0 then
+                hrp.Velocity = Vector3.new(dir.X * speedVal, hrp.Velocity.Y, dir.Z * speedVal)
             end
         end
+    end,
 
-        event.Enable(self)
+    OnEnable = function(ctx)
+        event:Enable(ctx.Module.Definition)
     end,
 
     OnDisable = function(ctx)
-        event.Disable(self)
+        event:Disable()
     end,
 }
