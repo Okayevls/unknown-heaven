@@ -1,6 +1,3 @@
---!strict
--- ModuleManager.lua
-
 export type Bind =
 { kind: "KeyCode", code: Enum.KeyCode }
         | { kind: "UserInputType", code: Enum.UserInputType }
@@ -19,6 +16,7 @@ Class: string?,
 
 GetSetting: (self: ModuleCtx, settingName: string) -> any,
 SetSetting: (self: ModuleCtx, settingName: string, value: any) -> (),
+GetSettingData: (self: ModuleCtx, settingName: string) -> SettingDef?,
 }
 
 export type ModuleDef = {
@@ -71,7 +69,6 @@ return n
 end
 
 local function roundToStep(v: number, mn: number, step: number): number
--- step guaranteed > 0 by caller
 local x = (v - mn) / step
 local r = math.floor(x + 0.5)
 return mn + r * step
@@ -93,7 +90,6 @@ return str
 end
 
 if #options == 0 then
--- fallback, чтобы не возвращать nil
 return tostring(def.Default or "")
 end
 
@@ -121,10 +117,8 @@ step = 1
 end
 
 num = roundToStep(num, def.Min, step)
--- FIX: после округления снова clamp, иначе можно выйти за Max
 num = clamp(num, def.Min, def.Max)
 
--- лёгкая стабилизация float
 local stabilized = tonumber(string.format("%.6f", num))
 return stabilized or num
 
@@ -133,7 +127,6 @@ local out: { [string]: boolean } = {}
 local src = (type(value) == "table") and (value :: any) or {}
 local defaults = def.Default or {}
 
--- берём только ключи из defaults, чтобы список был контролируемый
 for k, dv in pairs(defaults) do
 if src[k] == true then
 out[k] = true
@@ -177,21 +170,21 @@ end
 -- ========= ctor =========
 
 export type ModuleManager = {
-_categories: CategoryMap,
-_ChangedEvent: BindableEvent,
-Changed: RBXScriptSignal,
+     _categories: CategoryMap,
+     _ChangedEvent: BindableEvent,
+     Changed: RBXScriptSignal,
 
-RegisterFromList: (self: ModuleManager, modulesByCategory: { [string]: { ModuleDef } }) -> (),
-GetCategories: (self: ModuleManager) -> { string },
-GetModuleDefs: (self: ModuleManager, categoryName: string) -> { ModuleDef },
-GetState: (self: ModuleManager, categoryName: string, moduleName: string) -> ModuleState?,
-GetSetting: (self: ModuleManager, categoryName: string, moduleName: string, settingName: string) -> any,
-SetSetting: (self: ModuleManager, categoryName: string, moduleName: string, settingName: string, value: any) -> (),
-SetEnabled: (self: ModuleManager, categoryName: string, moduleName: string, enabled: boolean) -> (),
-Toggle: (self: ModuleManager, categoryName: string, moduleName: string) -> (),
-SetBind: (self: ModuleManager, categoryName: string, moduleName: string, bind: Bind?) -> (),
-ResetModule: (self: ModuleManager, categoryName: string, moduleName: string) -> (),
-ResetCategory: (self: ModuleManager, categoryName: string) -> (),
+     RegisterFromList: (self: ModuleManager, modulesByCategory: { [string]: { ModuleDef } }) -> (),
+     GetCategories: (self: ModuleManager) -> { string },
+     GetModuleDefs: (self: ModuleManager, categoryName: string) -> { ModuleDef },
+     GetState: (self: ModuleManager, categoryName: string, moduleName: string) -> ModuleState?,
+     GetSetting: (self: ModuleManager, categoryName: string, moduleName: string, settingName: string) -> any,
+     SetSetting: (self: ModuleManager, categoryName: string, moduleName: string, settingName: string, value: any) -> (),
+     SetEnabled: (self: ModuleManager, categoryName: string, moduleName: string, enabled: boolean) -> (),
+     Toggle: (self: ModuleManager, categoryName: string, moduleName: string) -> (),
+     SetBind: (self: ModuleManager, categoryName: string, moduleName: string, bind: Bind?) -> (),
+     ResetModule: (self: ModuleManager, categoryName: string, moduleName: string) -> (),
+     ResetCategory: (self: ModuleManager, categoryName: string) -> (),
 }
 
 function ModuleManager.new(): ModuleManager
@@ -202,7 +195,6 @@ local self = setmetatable({}, ModuleManager) :: any
 return (self :: any) :: ModuleManager
 end
 
--- ========= internal ctx =========
 
 local function makeCtx(mgr: ModuleManager, categoryName: string, moduleName: string): ModuleCtx
 local st = mgr:GetState(categoryName, moduleName)
@@ -218,6 +210,20 @@ end,
 
 SetSetting = function(self: ModuleCtx, settingName: string, value: any)
 mgr:SetSetting(categoryName, moduleName, settingName, value)
+end,
+
+GetSettingData = function(self: ModuleCtx, settingName: string): SettingDef?
+local state = mgr:GetState(categoryName, moduleName)
+local settings = if state then state.Definition.Settings else nil
+
+if settings then
+for _, sDef in ipairs(settings) do
+if sDef.Name == settingName then
+return sDef
+end
+end
+end
+return nil
 end,
 }
 
