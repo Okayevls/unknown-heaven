@@ -413,14 +413,14 @@ settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
 
 settingsCloseOverlay.MouseButton1Down:Connect(function()
-    local mouse = UserInputService:GetMouseLocation()
-    local pane = settingsPane
+    local mousePos = UserInputService:GetMouseLocation()
+    local panePos = settingsPane.AbsolutePosition
+    local paneSize = settingsPane.AbsoluteSize
 
-    local absPos = pane.AbsolutePosition
-    local absSize = pane.AbsoluteSize
+    local isInside = mousePos.X >= panePos.X and mousePos.X <= (panePos.X + paneSize.X) and
+            mousePos.Y >= (panePos.Y + 36) and mousePos.Y <= (panePos.Y + paneSize.Y + 36)
 
-    if mouse.X >= absPos.X and mouse.X <= (absPos.X + absSize.X) and
-            mouse.Y >= absPos.Y and mouse.Y <= (absPos.Y + absSize.Y) then
+    if isInside then
         return
     end
 
