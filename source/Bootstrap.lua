@@ -11,12 +11,20 @@ local log = LoggerClass.new("[Heaven]")
 
 log:Info("Starting bootstrapper...")
 
-local success, result = pcall(function() return http:JSONDecode(game:HttpGet("https://api.github.com/repos/Okayevls/unknown-heaven/contents/scripts")) end)
-local folder = success and type(result) == "table" and table.find(result, function(v) return v.name == project end)
-if not success then return log:Error("GitHub API rate limited.") end
-if not folder then
+local api = "https://api.github.com/repos/Okayevls/unknown-heaven/contents/scripts"
+local success, result = pcall(function() return http:JSONDecode(game:HttpGet(api)) end)
+if not success or type(result) ~= "table" then
+    log:Error("GitHub API is unavailable or rate limited.")
+    return
+end
+local exists = false
+for _, item in ipairs(result) do
+    if item.type == "dir" and item.name == project then exists = true break end
+end
+if not exists then
     if setclipboard then setclipboard(discordLink) end
-    return log:Warn("Project '"..tostring(project).."' not found (close or update). Invite copied.")
+    log:Warn("Project '"..tostring(project).."' not found (close or update). Invite copied.")
+    return
 end
 
 log:Info("Loading FastDownloader...")
@@ -54,6 +62,7 @@ log:Info("Successfully registered all modules.")
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
+    Logger = log,
     DebugMode = true
 }
 
