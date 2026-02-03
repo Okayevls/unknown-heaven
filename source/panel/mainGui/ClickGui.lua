@@ -311,9 +311,11 @@ local settingsPane = mk("Frame", {
     BackgroundColor3=Theme.Panel2,
     AnchorPoint=Vector2.new(1,0),
     Position=UDim2.new(1,0,0,0),
-
+    
     Size=UDim2.new(0, 300, 1, 0),
+
     Visible=false,
+    Active = true,
 }, content)
 addCorner(settingsPane, Theme.RoundSmall)
 addStroke(settingsPane, 0)
@@ -408,7 +410,8 @@ settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
 
 settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
-settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
+
+settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
 
 local function createMiniToggle(parent)
     local root = mk("Frame", {BackgroundColor3=Theme.Panel, Size=UDim2.fromOffset(38, 20)}, parent)
