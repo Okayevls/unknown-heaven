@@ -303,8 +303,8 @@ local settingsCloseOverlay = mk("TextButton", {
     Size=UDim2.fromScale(1,1),
 }, content)
 
-settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
-settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
+--settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
+--settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
 
 local settingsPane = mk("Frame", {
     Name="SettingsPane",
@@ -407,8 +407,8 @@ end
 settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
 
 settingsPane.ZIndex = content.ZIndex + 10
---settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
---settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
+settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
+settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
 
 local function createMiniToggle(parent)
     local root = mk("Frame", {BackgroundColor3=Theme.Panel, Size=UDim2.fromOffset(38, 20)}, parent)
