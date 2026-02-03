@@ -55,7 +55,7 @@ return {
 
     Settings = {},
 
-    OnEnable = function(self, ctx)
+    OnEnable = function(ctx)
         task.spawn(function()
             if not RedeemRemote then
                 if not findRemote() then
@@ -78,7 +78,7 @@ return {
         end)
     end,
 
-    OnDisable = function(self, ctx)
+    OnDisable = function(ctx)
 
     end,
 }

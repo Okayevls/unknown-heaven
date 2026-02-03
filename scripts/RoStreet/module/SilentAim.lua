@@ -235,7 +235,7 @@ return {
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
     },
 
-    OnEnable = function(self, ctx)
+    OnEnable = function(ctx)
         local antiBuy = ctx:GetSetting("Anti Buy")
         local stompBind = ctx:GetSetting("Auto Stomp")
         local selectTargetBind = ctx:GetSetting("Select Target")
@@ -294,7 +294,7 @@ return {
         end)
     end,
 
-    OnDisable = function(self, ctx)
+    OnDisable = function(ctx)
         isShooting = false
         randomTarget = nil
         selectedTarget = nil
