@@ -1,0 +1,102 @@
+--[[
+    HEAVEN ENGINE - ПОЛНЫЙ ШАБЛОН МОДУЛЯ
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Локальные переменные для хранения ресурсов модуля
+local connection = nil
+local folder = nil
+
+return {
+    -- [ ОСНОВНАЯ ИНФОРМАЦИЯ ]
+    Name = "FullExample",           -- Имя в списке
+    Desc = "Демонстрация всех настроек", -- Описание (подсказка)
+    Class = "Combat",               -- Вкладка (Combat, Movement, Player, Render)
+    Category = "Internal",          -- Подкатегория
+
+    -- [ ВСЕ ВАРИАНТЫ НАСТРОЕК (Settings) ]
+    Settings = {
+        -- 1. Переключатель (Вкл/Выкл)
+        {
+            Type = "Boolean",
+            Name = "UseSpeed",
+            Default = false
+        },
+
+        -- 2. Слайдер (Числовой диапазон)
+        {
+            Type = "Slider",
+            Name = "Value",
+            Default = 15,
+            Min = 0,
+            Max = 100,
+            Step = 0.5 -- Шаг изменения
+        },
+
+        -- 3. Выбор режима (Список/Mode)
+        {
+            Type = "ModeSetting",
+            Name = "Method",
+            Default = "Legit",
+            Options = {"Legit", "Rage", "Funny", "Ultra"}
+        },
+
+        -- 4. Текстовое поле (Ввод строки)
+        {
+            Type = "String",
+            Name = "WebhookURL",
+            Default = "https://..."
+        },
+
+        -- 5. Мульти-выбор (Несколько галочек сразу)
+        -- В ctx:GetSetting вернет таблицу: {["Visuals"] = true, ["Sounds"] = false}
+        {
+            Type = "MultiBoolean",
+            Name = "Effects",
+            Default = {
+                ["Visuals"] = true,
+                ["Sounds"] = false,
+                ["Particles"] = true
+            }
+        },
+    },
+
+    -- [ ЛОГИКА ВКЛЮЧЕНИЯ ]
+    OnEnable = function(ctx)
+        -- Как получать значения разных типов настроек:
+        local isSpeed = ctx:GetSetting("UseSpeed")       -- вернет true/false
+        local val = ctx:GetSetting("Value")              -- вернет число (15)
+        local mode = ctx:GetSetting("Method")            -- вернет строку ("Legit")
+        local text = ctx:GetSetting("WebhookURL")        -- вернет строку
+        local multi = ctx:GetSetting("Effects")          -- вернет таблицу
+
+        -- Пример использования MultiBoolean:
+        if multi["Visuals"] then
+            print("Визуальные эффекты включены")
+        end
+
+        -- Пример создания цикла
+        connection = RunService.Heartbeat:Connect(function(dt)
+            -- Обновляем переменные из GUI в реальном времени внутри цикла
+            local currentSpeed = ctx:GetSetting("Value")
+            -- Твои действия...
+        end)
+    end,
+
+    -- [ ЛОГИКА ВЫКЛЮЧЕНИЯ ]
+    OnDisable = function(ctx)
+        -- Всегда отключай соединения, иначе игра будет лагать после 10 включений
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+
+        -- Удаляй созданные объекты (ESP, папки и т.д.)
+        if folder then
+            folder:Destroy()
+            folder = nil
+        end
+    end,
+}
