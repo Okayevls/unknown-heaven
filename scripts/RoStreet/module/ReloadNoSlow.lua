@@ -1,11 +1,6 @@
 local ContextActionService = game:GetService("ContextActionService")
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-
-local function blockReload(actionName, inputState, inputObject)
-    return Enum.ContextActionResult.Sink
-end
 
 local SupportedWeapons = {
     ["AW1"] = true, ["Ak"] = true, ["Barrett"] = true, ["Deagle"] = true, ["Double Barrel"] = true, ["Draco"] = true,
@@ -18,41 +13,36 @@ local function getEquippedWeapon()
     if not char then return nil end
 
     for name, _ in pairs(SupportedWeapons) do
-        if char:FindFirstChild(name) and char[name]:FindFirstChild("Communication") then
-            return char[name]
+        local tool = char:FindFirstChild(name)
+        if tool and tool:FindFirstChild("Communication") then
+            return tool
         end
     end
-
     return nil
 end
 
-local _connectionInputBegan = nil
+local function handleReloadAction(actionName, inputState, inputObject)
+    if inputState == Enum.UserInputState.Begin then
+        local weapon = getEquippedWeapon()
+        if weapon and weapon:FindFirstChild("Reload") then
+            weapon.Reload:InvokeServer()
+        end
+    end
+    return Enum.ContextActionResult.Sink
+end
 
 return {
     Name = "ReloadNoSlow",
     Desc = "Нету замедления от перезарядки",
     Class = "Player",
     Category = "Utility",
-
     Settings = {},
 
     OnEnable = function(ctx)
-        ContextActionService:BindAction("BlockReload", blockReload, false, Enum.KeyCode.R)
-        _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
-            if processed then return end
-            if input.KeyCode == Enum.KeyCode.R then
-                print("2222")
-                local weapon = getEquippedWeapon()
-                if weapon and weapon:FindFirstChild("Reload") then
-                    weapon.Reload:InvokeServer()
-                    print("111")
-                end
-            end
-        end)
+        ContextActionService:BindAction("BlockReload", handleReloadAction, false, Enum.KeyCode.R)
     end,
 
     OnDisable = function(ctx)
         ContextActionService:UnbindAction("BlockReload")
-        if _connectionInputBegan then  _connectionInputBegan:Disconnect()  _connectionInputBegan = nil  end
     end,
 }
