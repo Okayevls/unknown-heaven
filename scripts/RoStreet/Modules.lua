@@ -4,7 +4,6 @@ return {
     "scripts/RoStreet/module/Speed.lua",
     "scripts/RoStreet/module/RedeemCode.lua",
     "scripts/RoStreet/module/NoClip.lua",
-    "scripts/RoStreet/module/KickTarget.lua",
     "scripts/RoStreet/module/Fly.lua",
     "scripts/RoStreet/module/Esp.lua",
     "scripts/RoStreet/module/SilentAim.lua",
