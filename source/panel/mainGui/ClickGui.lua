@@ -1592,7 +1592,7 @@ end
 local uiVisible = true
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    if input.KeyCode == Enum.KeyCode.RightShift then
+    if input.KeyCode == Enum.KeyCode.Insert then
         uiVisible = not uiVisible
         dim.Visible = uiVisible
         main.Visible = uiVisible
