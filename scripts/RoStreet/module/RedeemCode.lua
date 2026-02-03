@@ -1,4 +1,50 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RedeemRemote = nil
+local isFunction = false
+
+local CODES = {
+    "20MVISITS",
+    "20KLIKES",
+    "StarCity"
+}
+
+local redeemed = {}
+for _, code in ipairs(CODES) do
+    redeemed[code] = false
+end
+
+local function findRemote()
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj.Name == "RedeemCode" and (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+            RedeemRemote = obj
+            isFunction = obj:IsA("RemoteFunction")
+            return true
+        end
+    end
+    RedeemRemote = ReplicatedStorage:WaitForChild("RedeemCode", 10)
+    if RedeemRemote then
+        isFunction = RedeemRemote:IsA("RemoteFunction")
+        return true
+    end
+    return false
+end
+
+local function redeem(code)
+    if redeemed[code] then return end
+    if not RedeemRemote then return end
+
+    local success, result = pcall(function()
+        if isFunction then
+            return RedeemRemote:InvokeServer(code)
+        else
+            RedeemRemote:FireServer(code)
+        end
+    end)
+
+    if success then
+        redeemed[code] = true
+    end
+end
 
 return {
     Name = "RedeemCode",
@@ -8,51 +54,21 @@ return {
 
     Settings = {},
 
-    _codes = {
-        "20MVISITS",
-        "20KLIKES",
-        "StarCity"
-    },
-
-    _findRemote = function(self)
-        for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj.Name == "RedeemCode" and (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
-                return obj
-            end
-        end
-        return ReplicatedStorage:WaitForChild("RedeemCode", 5)
-    end,
-
     OnEnable = function(self, ctx)
-        local remote = self:_findRemote()
-
-        if not remote then
-            ctx.Logger:Error("RedeemCode: Remote 'RedeemCode' не найден!")
-            ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
-            return
-        end
-
         task.spawn(function()
-            local isFunction = remote:IsA("RemoteFunction")
+            if not RedeemRemote then
+                if not findRemote() then
+                    self.Enabled = false
 
-            for _, code in ipairs(self._codes) do
-                local currentState = ctx.moduleMgr:GetState(self.Category, self.Name)
-                if not currentState or not currentState.Enabled then break end
-
-                local success, result = pcall(function()
-                    if isFunction then
-                        return remote:InvokeServer(code)
-                    else
-                        remote:FireServer(code)
+                    if self._Switch then
+                        self._Switch.Value = false
                     end
-                end)
-
-                if success then
-                    ctx.Logger:Info("RedeemCode: Активирован код -> " .. code)
-                else
-                    ctx.Logger:Warn("RedeemCode: Ошибка кода " .. code .. ": " .. tostring(result))
+                    return
                 end
+            end
 
+            for _, code in ipairs(CODES) do
+                redeem(code)
                 task.wait(1)
             end
 
