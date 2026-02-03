@@ -3,15 +3,20 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
-local character, hum, hrp
-local keys = {W=false, A=false, S=false, D=false, Space=false, LeftControl=false}
 local connectionRenderStepped = nil
-local connectionUserInputService = nil
-local connectionUserInputEnded = nil
+local connectionInputBegan = nil
+local connectionInputEnded = nil
 
-local function resetKeys()
-    for k in pairs(keys) do
-        keys[k] = false
+local keys = {W=false, A=false, S=false, D=false, Space=false, LeftControl=false}
+
+local function updateInitialKeyStates()
+    for keyName, _ in pairs(keys) do
+        local keyCode = Enum.KeyCode[keyName]
+        if UserInputService:IsKeyDown(keyCode) then
+            keys[keyName] = true
+        else
+            keys[keyName] = false
+        end
     end
 end
 
@@ -33,16 +38,16 @@ return {
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if not hrp or not hum then return end
 
+        updateInitialKeyStates()
+
         connectionRenderStepped = RunService.RenderStepped:Connect(function()
-            if not hrp or not hrp.Parent then
-                hrp = character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-            end
+            if not hrp or not hrp.Parent then return end
 
             local multiplier = ctx:GetSetting("MultiplierXYZ")
             local cam = workspace.CurrentCamera
             local dir = Vector3.zero
 
+            -- Направления
             if keys.W then dir += cam.CFrame.LookVector end
             if keys.S then dir -= cam.CFrame.LookVector end
             if keys.A then dir -= cam.CFrame.RightVector end
@@ -56,22 +61,21 @@ return {
 
             hrp.CFrame = CFrame.new(hrp.Position + dir * multiplier, hrp.Position + dir * multiplier + cam.CFrame.LookVector)
             hrp.Velocity = Vector3.zero
-
             hum:ChangeState(Enum.HumanoidStateType.Physics)
         end)
 
         connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
             if processed then return end
-            local kc = input.KeyCode
-            if keys[kc.Name] ~= nil then
-                keys[kc.Name] = true
+            local kname = input.KeyCode.Name
+            if keys[kname] ~= nil then
+                keys[kname] = true
             end
         end)
 
         connectionInputEnded = UserInputService.InputEnded:Connect(function(input)
-            local kc = input.KeyCode
-            if keys[kc.Name] ~= nil then
-                keys[kc.Name] = false
+            local kname = input.KeyCode.Name
+            if keys[kname] ~= nil then
+                keys[kname] = false
             end
         end)
     end,
@@ -81,14 +85,11 @@ return {
         if connectionInputBegan then connectionInputBegan:Disconnect() connectionInputBegan = nil end
         if connectionInputEnded then connectionInputEnded:Disconnect() connectionInputEnded = nil end
 
-        resetKeys()
+        for k in pairs(keys) do keys[k] = false end
 
         local character = player.Character
-        if character then
-            local hum = character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-            end
+        if character and character:FindFirstChildOfClass("Humanoid") then
+            character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.GettingUp)
         end
     end,
 }

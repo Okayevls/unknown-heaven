@@ -69,7 +69,7 @@ local function createESP(plr)
     label.Size = UDim2.fromScale(1, 1)
     label.BackgroundTransparency = 1
     label.TextColor3 = ESP_SETTINGS.Color
-    label.Font = Enum.Font.GothamBold
+    label.Font = Enum.Font.Gotham
     label.Text = plr.Name
     label.BorderSizePixel = 0
     label.Parent = billboard
