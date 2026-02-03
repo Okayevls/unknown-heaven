@@ -671,10 +671,10 @@ local function addSliderSetting(tab, moduleName, sDef)
         setValue(sDef.Min + a*(sDef.Max - sDef.Min))
     end
 
-    trackConn(bar.InputBegan:Connect(function(i)
+    trackConn(bar.InputBegan:Connect(function(i, gpe)
+        if gpe then return end
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            i.ProcessedEvent = true
             updateFromX(i.Position.X)
             tween(knob, 0.12, {Size = UDim2.fromOffset(16,16)})
         end
