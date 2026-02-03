@@ -79,7 +79,7 @@ local function createESP(plr)
     label.BackgroundTransparency = 1
     label.BackgroundColor3 = Color3.new(0,0,0)
     label.TextColor3 = ESP_SETTINGS.Color
-    label.Font = Enum.Font.GothamBold
+    label.Font = Enum.Font.Gotham
     label.Text = plr.Name
     label.BorderSizePixel = 0
     label.Parent = billboard
