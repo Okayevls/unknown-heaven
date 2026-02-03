@@ -1,12 +1,11 @@
 @echo off
-cd /d "E:\LedikAll\unknown-heaven"
+cd /d E:\LedikAll\unknown-heaven
 
-git status --porcelain | findstr /r "^" >nul || (echo Нет изменений для деплоя. && exit /b)
-echo Начало Build: %time%
-git add . 2>nul && git commit -m "upd" --quiet && git push origin main --quiet
 
-if %errorlevel% equ 0 (
-    echo [Успешно] %time%
-) else (
-    echo [Ошибка] %time%
-)
+echo Добавление изменений...
+git add . >nul 2>&1
+echo Создание коммита...
+git commit -m "Auto-commit %date% %time%" > commit.log 2>&1
+echo Отправка в репозиторий...
+git push origin main >nul 2>&1
+echo Успешно сделано!!!
