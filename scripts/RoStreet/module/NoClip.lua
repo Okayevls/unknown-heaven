@@ -1,5 +1,20 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local _connectionStepped = nil
+local character
+local originalCollisions = {}
+local _connection = nil
+
+local function SetCharacter(char)
+    character = char
+    originalCollisions = {}
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            originalCollisions[part] = part.CanCollide
+        end
+    end
+end
 
 return {
     Name = "NoClip",
@@ -9,30 +24,15 @@ return {
 
     Settings = {},
 
-    _connection = nil,
-    _originalCollisions = {},
+    OnEnable = function(ctx)
+        SetCharacter(player.Character or player.CharacterAdded:Wait())
+        _connection = player.CharacterAdded:Connect(SetCharacter)
+        if _connectionStepped then return end
 
-    _setupCharacter = function(self, character)
-        self._originalCollisions = {}
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                self._originalCollisions[part] = part.CanCollide
-            end
-        end
-    end,
-
-    OnEnable = function(self, ctx)
-        local player = Players.LocalPlayer
-
-        if player.Character then
-            self:_setupCharacter(player.Character)
-        end
-
-        self._connection = RunService.Stepped:Connect(function()
-            local character = player.Character
+        _connectionStepped = RunService.Stepped:Connect(function()
             if character then
                 for _, part in ipairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
+                    if part:IsA("BasePart") then
                         part.CanCollide = false
                     end
                 end
@@ -40,18 +40,13 @@ return {
         end)
     end,
 
-    OnDisable = function(self, ctx)
-        if self._connection then
-            self._connection:Disconnect()
-            self._connection = nil
-        end
+    OnDisable = function(ctx)
+        if _connectionStepped then _connectionStepped:Disconnect() _connectionStepped = nil end
 
-        for part, wasCollidable in pairs(self._originalCollisions) do
-            if part and part.Parent then
-                part.CanCollide = wasCollidable
+        for part, canCollide in pairs(originalCollisions) do
+            if part and part:IsA("BasePart") then
+                part.CanCollide = canCollide
             end
         end
-
-        self._originalCollisions = {}
     end,
 }
