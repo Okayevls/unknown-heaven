@@ -179,7 +179,7 @@ end
 
 return {
     Name = "ESP",
-    Desc = "Подсветка игроков без багов при включении",
+    Desc = "Подсветка других игроков",
     Class = "Visuals",
     Category = "Visuals",
 
