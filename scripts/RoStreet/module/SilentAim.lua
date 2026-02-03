@@ -12,9 +12,8 @@ return {
     Category = "Combat",
 
     Settings = {
-        { Type = "Boolean", Name = "Auto Stomp", Default = false },
-        { Type = "Boolean", Name = "Anti Buy", Default = false },
-        { Type = "Boolean", Name = "Wallbang Beta", Default = false },
+        { Type = "Boolean", Name = "AntiBuy", Default = false },
+        { Type = "BindSetting", Name = "AutoStomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
     },
 
 

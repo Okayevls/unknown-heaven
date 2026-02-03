@@ -7,6 +7,7 @@ export type SettingDef =
 | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
 | { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
 | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
+| { Type: "BindSetting", Name: string, Default: Bind? }
 | { Type: "String", Name: string, Default: string? }
 
 export type ModuleCtx = {
@@ -76,18 +77,21 @@ end
 
 local function validateAndNormalizeSetting(def: SettingDef, value: any): any
 if def.Type == "Boolean" then
-return (value == true)
-
+   return (value == true)
 elseif def.Type == "String" then
-return tostring(value or "")
-
-elseif def.Type == "ModeSetting" then
-local options = def.Options
-local str = tostring(value)
-
-if table.find(options, str) ~= nil then
-return str
+   return tostring(value or "")
+elseif def.Type == "BindSetting" then
+if type(value) == "table" and value.kind and value.code then
+return value
 end
+return def.Default
+elseif def.Type == "ModeSetting" then
+   local options = def.Options
+   local str = tostring(value)
+
+   if table.find(options, str) ~= nil then
+       return str
+   end
 
 if #options == 0 then
 return tostring(def.Default or "")
@@ -263,7 +267,7 @@ else
 local settings = buildDefaultSettings(def.Settings or {})
 cat[def.Name] = {
 Enabled = false,
-Bind = nil,
+Bind = (def :: any).Bind or nil,
 Settings = settings,
 Definition = def,
 }

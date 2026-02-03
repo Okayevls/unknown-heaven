@@ -694,6 +694,45 @@ local function addSliderSetting(tab, moduleName, sDef)
     end))
 end
 
+local function addBindSettingRow(tab, moduleName, sDef)
+    local row = settingRowBase(sDef.Name, "Keybind")
+
+    local holder = mk("Frame", {
+        BackgroundTransparency = 1,
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, 0, 0.5, 0),
+        Size = UDim2.fromOffset(100, 22),
+    }, row)
+
+    local btn = tinyButton(holder, "None")
+    btn.Size = UDim2.fromScale(1, 1)
+
+    local function updateUI()
+        local val = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
+        btn.Text = bindToText(val)
+    end
+
+    updateUI()
+
+    trackConn(btn.MouseButton1Down:Connect(function()
+        if activeBindTarget and activeBindTarget.settingName == sDef.Name then
+            activeBindTarget = nil
+            updateUI()
+            return
+        end
+
+        activeBindTarget = {
+            tab = tab,
+            moduleName = moduleName,
+            settingName = sDef.Name,
+            button = btn,
+            label = btn
+        }
+        btn.Text = "..."
+        tween(btn, 0.12, {BackgroundColor3 = Theme.Accent, TextColor3 = Color3.fromRGB(255, 255, 255)})
+    end))
+end
+
 local function addMultiBooleanSetting(tab, moduleName, sDef)
     local row = settingRowBase(sDef.Name, "MultiBoolean")
     local wrapTop = 41
@@ -891,6 +930,7 @@ local function renderSettings(tab, moduleName)
         if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
         elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
         elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "BindSetting" then addBindSettingRow(tab, moduleName, sDef)
         elseif sDef.Type == "String" then addStringSetting(tab, moduleName, sDef)
         elseif sDef.Type == "ModeSetting" then addModeSetting(tab, moduleName, sDef)
         end
@@ -1566,8 +1606,13 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 
     if activeBindTarget then
         local bind = inputToBind(input)
-        if bind then
-            setBind(activeBindTarget.tab, activeBindTarget.moduleName, bind)
+        if bind or isDeleteBindInput(input) then
+            if activeBindTarget.settingName then
+                moduleMgr:SetSetting(activeBindTarget.tab, activeBindTarget.moduleName, activeBindTarget.settingName, bind)
+            else
+                setBind(activeBindTarget.tab, activeBindTarget.moduleName, bind)
+            end
+
             activeBindTarget.label.Text = bindToText(bind)
             tween(activeBindTarget.button, 0.10, {BackgroundColor3 = Theme.Panel, TextColor3 = Theme.Text})
             activeBindTarget = nil
