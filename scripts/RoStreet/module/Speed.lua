@@ -28,9 +28,7 @@ return {
     end,
 
     OnDisable = function(ctx)
-        if self._connection then
-            self._connection:Disconnect()
-            self._connection = nil
-        end
+        self._connection:Disconnect()
+        self._connection = nil
     end,
 }
