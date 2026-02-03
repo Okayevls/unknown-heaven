@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 local espFolder = Instance.new("Folder")
@@ -110,15 +111,20 @@ return {
     },
 
     OnEnable = function(ctx)
+        local isEnabled = true
+
         local function handlePlr(plr)
             if plr == LocalPlayer then return end
-            plr.CharacterAdded:Connect(function()
+
+            local function onChar()
                 task.wait(0.5)
-                if ctx.moduleMgr:GetState(ctx.Category, ctx.Name).Enabled then
+                if isEnabled and plr.Parent and plr.Character then
                     clearPlrESP(plr)
                     createESP(plr)
                 end
-            end)
+            end
+
+            table.insert(_connections, plr.CharacterAdded:Connect(onChar))
             if plr.Character then createESP(plr) end
         end
 
@@ -160,11 +166,18 @@ return {
                 end
             end
         end))
+
+        ctx.OnDisableFolder = function() isEnabled = false end
     end,
 
     OnDisable = function(ctx)
-        for _, conn in ipairs(_connections) do conn:Disconnect() end
+        for _, conn in ipairs(_connections) do
+            if typeof(conn) == "RBXScriptConnection" then
+                conn:Disconnect()
+            end
+        end
         _connections = {}
+
         updateOriginalNames(false)
         for plr, _ in pairs(espData) do clearPlrESP(plr) end
         espData = {}
