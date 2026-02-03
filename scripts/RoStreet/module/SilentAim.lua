@@ -214,6 +214,10 @@ local function blockShoot(_, state)
     return Enum.ContextActionResult.Pass
 end
 
+local function getKeyCode(bind)
+    return (bind and bind.kind == "KeyCode") and bind.code or nil
+end
+
 local _connectionContextActionService = nil
 local _connectionInputBegan = nil
 local _connectionInputEnded = nil
@@ -234,13 +238,12 @@ return {
     },
 
     OnEnable = function(ctx)
-        local antiBuy = ctx:GetSetting("Anti Buy")
-        local stompBind = ctx:GetSetting("Auto Stomp")
-        local selectTargetBind = ctx:GetSetting("Select Target")
         _connectionContextActionService = ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1)
         _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
+            local selectTargetBind = getKeyCode(ctx:GetSetting("Select Target"))
+            local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
             if processed then return end
-            if input.KeyCode == selectTargetBind.code and selectTargetBind.code ~= nil then
+            if selectTargetBind and input.KeyCode == selectTargetBind then
                 if selectedTarget then
                     selectedTarget = nil
                     if line then line:Remove() line = nil end
@@ -251,7 +254,7 @@ return {
             end
 
             local target = selectedTarget ~= nil and selectedTarget or randomTarget
-            if input.KeyCode == stompBind.code and stompBind.code ~= nil then
+            if stompBind and input.KeyCode == stompBind then
                 if randomTarget ~= nil or selectedTarget ~= nil then
                     stomp(target)
                 end
@@ -276,7 +279,7 @@ return {
                 shoot(target)
             end
 
-            ProximityPromptService.Enabled = not antiBuy
+            ProximityPromptService.Enabled = not ctx:GetSetting("Anti Buy")
         end)
 
         _connectionCharacterAdded = LocalPlayer.CharacterAdded:Connect(function()
