@@ -198,10 +198,7 @@ end
 
 local function stomp(targetPlayer)
     local args = { targetPlayer.Character }
-    game:GetService("ReplicatedStorage")
-        :WaitForChild("RemoteEvents")
-        :WaitForChild("Stomp")
-        :InvokeServer(unpack(args))
+    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Stomp"):InvokeServer(unpack(args))
 end
 
 local function blockShoot(_, state)

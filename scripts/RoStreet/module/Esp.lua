@@ -4,7 +4,7 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local espFolder = Instance.new("Folder")
-espFolder.Name = "HeavenESP_Global"
+espFolder.Name = "E4PHREVN"
 espFolder.Parent = CoreGui
 
 local espData = {}

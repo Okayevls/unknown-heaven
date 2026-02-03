@@ -14,7 +14,7 @@ end
 
 return {
     Name = "FastReload",
-    Desc = "Быстрая перезарядка оружия",
+    Desc = "Быстрая перезарядка оружия (NOT ALL EXECUTOR)",
     Class = "Player",
     Category = "Utility",
 
