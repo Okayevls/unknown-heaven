@@ -634,9 +634,10 @@ local function addSliderSetting(tab, moduleName, sDef)
     local function setValue(v)
         local step = sDef.Step or 1
         v = math.clamp(v, sDef.Min, sDef.Max)
-        v = math.floor((v - sDef.Min)/step + 0.5)*step + sDef.Min
+        v = math.floor((v - sDef.Min)/step + 0.5) * step + sDef.Min
         moduleMgr:SetSetting(tab, moduleName, sDef.Name, v)
-        valLabel.Text = tostring(v)
+        valLabel.Text = string.format("%g", v)
+
         local denom = (sDef.Max - sDef.Min)
         local alpha = (denom == 0) and 0 or ((v - sDef.Min) / denom)
 
@@ -647,9 +648,9 @@ local function addSliderSetting(tab, moduleName, sDef)
     local function setUI(v)
         local step = sDef.Step or 1
         v = math.clamp(tonumber(v) or sDef.Min, sDef.Min, sDef.Max)
-        v = math.floor((v - sDef.Min)/step + 0.5)*step + sDef.Min
+        v = math.floor((v - sDef.Min)/step + 0.5) * step + sDef.Min
+        valLabel.Text = string.format("%g", v)
 
-        valLabel.Text = tostring(v)
         local denom = (sDef.Max - sDef.Min)
         local alpha = (denom == 0) and 0 or ((v - sDef.Min) / denom)
 

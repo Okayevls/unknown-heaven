@@ -10,7 +10,7 @@ return {
 
     Settings = {
         { Type = "Slider", Name = "MultiplierXZ", Default = 145, Min = 0, Max = 300, Step = 1 },
-        { Type = "Slider", Name = "MultiplierY", Default = 0.9, Min = 0, Max = 2, Step = 0.1 },
+        { Type = "Slider", Name = "MultiplierY", Default = 0.9, Min = 0, Max = 1, Step = 0.05 },
     },
 
     OnEnable = function(ctx)
