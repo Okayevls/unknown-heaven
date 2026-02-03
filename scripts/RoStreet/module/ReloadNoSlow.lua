@@ -39,13 +39,18 @@ return {
     OnEnable = function(ctx)
         ContextActionService:BindAction("BlockReload", blockReload, false, Enum.KeyCode.R)
         _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
+            if processed then return end
             if input.KeyCode == Enum.KeyCode.R then
-                game:GetService("Players").LocalPlayer:WaitForChild("Backpack"):WaitForChild(getEquippedWeapon()):WaitForChild("Reload"):InvokeServer()
+                local weapon = getEquippedWeapon()
+                if weapon and weapon:FindFirstChild("Reload") then
+                    weapon.Reload:InvokeServer()
+                end
             end
         end)
     end,
 
     OnDisable = function(ctx)
         ContextActionService:UnbindAction("BlockReload")
+        if _connectionInputBegan then  _connectionInputBegan:Disconnect()  _connectionInputBegan = nil  end
     end,
 }
