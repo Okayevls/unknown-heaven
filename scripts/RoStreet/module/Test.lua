@@ -1,35 +1,39 @@
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+local connection
+
 return {
-    Name = "Test",
-    Desc = "Тестовый модуль: печатает в output.",
-    Class = "Debug",
+    Name = "FlyUp",
+    Desc = "Плавно поднимает игрока вверх, пока включен.",
+    Class = "Movement",
     Category = "Utility",
 
     Settings = {
-        {Type="Boolean", Name="DoPrint", Default=true},
-        {Type="Slider",  Name="Times",   Default=3, Min=1, Max=10, Step=1},
-        {Type="String",  Name="Text",    Default="Hello from Test"},
-        {Type="ModeSetting", Name="Mode", Default="Print", Options={"Print","Warn"}},
+        {Type="Slider", Name="Speed", Default=5, Min=1, Max=50, Step=1},
     },
 
     OnEnable = function(ctx)
-        if ctx:GetSetting("DoPrint") ~= true then
-            return
-        end
+        local player = Players.LocalPlayer
 
-        local text = ctx:GetSetting("Text")
-        local times = ctx:GetSetting("Times")
-        local mode = ctx:GetSetting("Mode")
+        connection = RunService.Heartbeat:Connect(function(dt)
+            local character = player.Character
+            local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
-        for i = 1, times do
-            if mode == "Warn" then
-                warn("[Test] " .. tostring(text) .. " #" .. i)
-            else
-                print("[Test] " .. tostring(text) .. " #" .. i)
+            if hrp then
+                local speed = ctx:GetSetting("Speed")
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, speed * dt, 0)
             end
-        end
+        end)
+
+        print("[FlyUp] Enabled")
     end,
 
     OnDisable = function(ctx)
-        print("[Test] Disabled")
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+        print("[FlyUp] Disabled")
     end,
 }
