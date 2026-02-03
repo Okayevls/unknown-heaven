@@ -7,4 +7,5 @@ return {
     "scripts/RoStreet/module/Fly.lua",
     "scripts/RoStreet/module/Esp.lua",
     "scripts/RoStreet/module/SilentAim.lua",
+    "scripts/RoStreet/module/FastReload.lua",
 }
