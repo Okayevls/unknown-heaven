@@ -413,18 +413,17 @@ settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
 
 settingsCloseOverlay.MouseButton1Down:Connect(function()
-    -- Проверяем координаты мыши
-    local mousePos = UserInputService:GetMouseLocation()
-    local panePos = settingsPane.AbsolutePosition
-    local paneSize = settingsPane.AbsoluteSize
+    local mouse = UserInputService:GetMouseLocation()
+    local pane = settingsPane
 
-    -- Если мышь ВНУТРИ области панели настроек — ничего не делаем
-    if mousePos.X >= panePos.X and mousePos.X <= (panePos.X + paneSize.X) and
-            mousePos.Y >= panePos.Y and mousePos.Y <= (panePos.Y + paneSize.Y) then
+    local absPos = pane.AbsolutePosition
+    local absSize = pane.AbsoluteSize
+
+    if mouse.X >= absPos.X and mouse.X <= (absPos.X + absSize.X) and
+            mouse.Y >= absPos.Y and mouse.Y <= (absPos.Y + absSize.Y) then
         return
     end
 
-    -- Если мышь ВНЕ панели — закрываем
     closeSettings()
 end)
 
@@ -989,7 +988,7 @@ local function moduleCard(tabName, mName, desc)
         end
     end)
 
-    bindBtn.MouseButton1Click:Connect(function()
+    bindBtn.MouseButton1Down:Connect(function()
         if activeBindTarget and activeBindTarget.tab == tabName and activeBindTarget.moduleName == mName then
             activeBindTarget = nil
             setBind(tabName, mName, nil)
