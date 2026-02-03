@@ -69,10 +69,11 @@ return {
 
             for _, code in ipairs(CODES) do
                 redeem(code)
+                print(code)
                 task.wait(1)
             end
 
-            ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
+            getgenv().ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
         end)
     end,
 
