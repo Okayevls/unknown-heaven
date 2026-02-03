@@ -74,7 +74,7 @@ return {
                 task.wait(1)
             end
 
-            getgenv().ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
+            ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
         end)
     end,
 

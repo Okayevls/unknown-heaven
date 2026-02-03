@@ -202,8 +202,6 @@ local function stomp(targetPlayer)
         :WaitForChild("RemoteEvents")
         :WaitForChild("Stomp")
         :InvokeServer(unpack(args))
-    SilentAim.EnabledAutoStomp = false
-    if SilentAim._StompSwitch then SilentAim._StompSwitch.Value = false end
 end
 
 local function blockShoot(_, state)
@@ -298,18 +296,12 @@ return {
         isShooting = false
         randomTarget = nil
         selectedTarget = nil
-        _connectionContextActionService:Disconnect()
-        _connectionInputBegan:Disconnect()
-        _connectionInputEnded:Disconnect()
-        _connectionRenderStepped:Disconnect()
-        _connectionCharacterAdded:Disconnect()
-        _connectionPlayerRemoving:Disconnect()
-        _connectionContextActionService = nil
-        _connectionInputBegan = nil
-        _connectionInputEnded = nil
-        _connectionRenderStepped = nil
-        _connectionCharacterAdded = nil
-        _connectionPlayerRemoving = nil
+        if _connectionContextActionService then _connectionContextActionService:Disconnect() _connectionContextActionService = nil end
+        if _connectionInputBegan then _connectionInputBegan:Disconnect() _connectionInputBegan = nil end
+        if _connectionInputEnded then _connectionInputEnded:Disconnect() _connectionInputEnded = nil end
+        if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
+        if _connectionCharacterAdded then _connectionCharacterAdded:Disconnect() _connectionCharacterAdded = nil end
+        if _connectionPlayerRemoving then _connectionPlayerRemoving:Disconnect() _connectionPlayerRemoving = nil end
 
         if line then
             line:Remove()
