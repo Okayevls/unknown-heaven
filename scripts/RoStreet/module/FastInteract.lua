@@ -28,7 +28,6 @@ return {
         end)
 
         table.insert(self._connections, conn)
-        ctx.Logger:Info("FastInteract: Enabled (Manual Mode)")
     end,
 
     OnDisable = function(self, ctx)
@@ -46,6 +45,5 @@ return {
         end
 
         self._originalDurations = {}
-        ctx.Logger:Info("FastInteract: Disabled (Original values restored)")
     end,
 }

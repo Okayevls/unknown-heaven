@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local connection = nil
 
 return {
     Name = "Speed",
@@ -13,8 +12,10 @@ return {
         { Type = "Slider", Name = "MultiplierY", Default = 0.9, Min = 0, Max = 1, Step = 0.05 },
     },
 
+    _connection = nil,
+
     OnEnable = function(ctx)
-        connection = RunService.Heartbeat:Connect(function()
+        self._connection = RunService.Heartbeat:Connect(function()
             local currentHrp = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             local humanoid = Players.LocalPlayer.Character:FindFirstChild("Humanoid")
             local dir = humanoid.MoveDirection
@@ -27,9 +28,9 @@ return {
     end,
 
     OnDisable = function(ctx)
-        if connection then
-            connection:Disconnect()
-            connection = nil
+        if self._connection then
+            self._connection:Disconnect()
+            self._connection = nil
         end
     end,
 }
