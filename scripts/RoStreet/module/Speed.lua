@@ -28,6 +28,7 @@ return {
     end,
 
     OnDisable = function(ctx)
+        print("11111")
         self._connection:Disconnect()
         self._connection = nil
     end,
