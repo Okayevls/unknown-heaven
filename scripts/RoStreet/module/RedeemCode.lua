@@ -59,11 +59,8 @@ return {
         task.spawn(function()
             if not RedeemRemote then
                 if not findRemote() then
-                    self.Enabled = false
-
-                    if self._Switch then
-                        self._Switch.Value = false
-                    end
+                    warn("Remote not found!")
+                    ctx.moduleMgr:SetEnabled(ctx.Category, ctx.Name, false)
                     return
                 end
             end
@@ -74,7 +71,7 @@ return {
                 task.wait(1)
             end
 
-            ctx.moduleMgr:SetEnabled(self.Category, self.Name, false)
+            ctx.moduleMgr:SetEnabled(ctx.Category, ctx.Name, false)
         end)
     end,
 
