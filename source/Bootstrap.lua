@@ -62,7 +62,6 @@ log:Info("Successfully registered all modules.")
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
-    Logger = log,
     DebugMode = true
 }
 
