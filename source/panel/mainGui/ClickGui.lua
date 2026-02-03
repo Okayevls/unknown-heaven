@@ -303,6 +303,9 @@ local settingsCloseOverlay = mk("TextButton", {
     Size=UDim2.fromScale(1,1),
 }, content)
 
+settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
+settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
+
 local settingsPane = mk("Frame", {
     Name="SettingsPane",
     BackgroundColor3=Theme.Panel2,
@@ -402,6 +405,7 @@ local function closeSettings()
 end
 
 settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
+
 settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
 settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
@@ -656,6 +660,7 @@ local function addSliderSetting(tab, moduleName, sDef)
     trackConn(bar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
+            i.ProcessedEvent = true
             updateFromX(i.Position.X)
             tween(knob, 0.12, {Size = UDim2.fromOffset(16,16)})
         end
@@ -1590,13 +1595,22 @@ do
 end
 
 local uiVisible = true
+
+local function toggleUI(state)
+    uiVisible = state
+    dim.Visible = uiVisible
+    main.Visible = uiVisible
+
+    UserInputService.MouseIconEnabled = uiVisible
+    UserInputService.MouseBehavior = uiVisible and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+end
+
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
-        uiVisible = not uiVisible
-        dim.Visible = uiVisible
-        main.Visible = uiVisible
+        toggleUI(not uiVisible)
     end
 end)
 
+toggleUI(true)
 applyTheme()
