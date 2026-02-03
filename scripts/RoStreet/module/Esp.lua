@@ -1,51 +1,69 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
+-- Папка для ESP
 local espFolder = Instance.new("Folder")
 espFolder.Name = "HeavenESP_Global"
 espFolder.Parent = CoreGui
 
-local espData = {}
-local _connections = {}
+local espData = {}         -- [player] = {Highlight=..., Billboard=..., Label=..., Character=..., Humanoid=...}
+local _connections = {}    -- общие коннекты (RenderStepped, PlayerAdded/Removing и т.п.)
+local _charCons = {}       -- [player] = {RBXScriptConnection,...} коннекты персонажа
 
 local ESP_SETTINGS = {
     Color = Color3.fromRGB(255, 255, 255),
 }
-local originalNameType = {}
+
+-- Восстановление исходного DisplayDistanceType
+local originalNameType = {} -- [Humanoid] = Enum.HumanoidDisplayDistanceType
 
 local function updateOriginalNames(hide)
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             local hum = plr.Character:FindFirstChildOfClass("Humanoid")
             if hum then
-                -- запоминаем исходное значение один раз
-                if originalNameType[hum] == nil then
-                    originalNameType[hum] = hum.DisplayDistanceType
-                end
-
                 if hide then
+                    if originalNameType[hum] == nil then
+                        originalNameType[hum] = hum.DisplayDistanceType
+                    end
                     hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
                 else
-                    -- восстанавливаем то, что было
-                    hum.DisplayDistanceType = originalNameType[hum] or Enum.HumanoidDisplayDistanceType.Viewer
-                    originalNameType[hum] = nil
+                    if originalNameType[hum] ~= nil then
+                        hum.DisplayDistanceType = originalNameType[hum]
+                        originalNameType[hum] = nil
+                    end
                 end
             end
         end
     end
 end
 
+local function disconnectCharCons(plr)
+    local t = _charCons[plr]
+    if not t then return end
+    for _, c in ipairs(t) do
+        if typeof(c) == "RBXScriptConnection" then
+            c:Disconnect()
+        end
+    end
+    _charCons[plr] = nil
+end
 
 local function clearPlrESP(plr)
-    if espData[plr] then
-        for _, obj in ipairs(espData[plr]) do
-            if typeof(obj) == "Instance" then obj:Destroy() end
-        end
-        espData[plr] = nil
+    local data = espData[plr]
+    if not data then return end
+
+    -- ВАЖНО: НЕ трогаем data.Character (персонажа)
+    if data.Highlight and data.Highlight.Parent then
+        data.Highlight:Destroy()
     end
+    if data.Billboard and data.Billboard.Parent then
+        data.Billboard:Destroy() -- Label удалится вместе с BillboardGui
+    end
+
+    espData[plr] = nil
 end
 
 local function getPlrName(plr, mode)
@@ -59,13 +77,17 @@ local function getPlrName(plr, mode)
 end
 
 local function createESP(plr)
-    if not plr.Character then return end
-
+    if plr == LocalPlayer then return end
     local char = plr.Character
-    local root = char:WaitForChild("HumanoidRootPart", 5)
-    if not root then return end
-    local head = char:FindFirstChild("Head") or root
+    if not char then return end
 
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local head = char:FindFirstChild("Head") or root
+    local hum = char:FindFirstChildOfClass("Humanoid")
+
+    -- Хайлайт
     local highlight = Instance.new("Highlight")
     highlight.Name = plr.Name .. "_Highlight"
     highlight.Adornee = char
@@ -75,6 +97,7 @@ local function createESP(plr)
     highlight.Enabled = false
     highlight.Parent = espFolder
 
+    -- Billboard
     local billboard = Instance.new("BillboardGui")
     billboard.Name = plr.Name .. "_Billboard"
     billboard.Adornee = head
@@ -89,7 +112,7 @@ local function createESP(plr)
     label.Position = UDim2.fromScale(0.5, 0.5)
     label.AutomaticSize = Enum.AutomaticSize.XY
     label.BackgroundTransparency = 1
-    label.BackgroundColor3 = Color3.new(0,0,0)
+    label.BackgroundColor3 = Color3.new(0, 0, 0)
     label.TextColor3 = ESP_SETTINGS.Color
     label.Font = Enum.Font.GothamBold
     label.BorderSizePixel = 0
@@ -102,7 +125,68 @@ local function createESP(plr)
     padding.PaddingBottom = UDim.new(0, 2)
     padding.Parent = label
 
-    espData[plr] = {highlight, billboard, char, label}
+    espData[plr] = {
+        Highlight = highlight,
+        Billboard = billboard,
+        Label = label,
+        Character = char,   -- просто ссылка, НЕ уничтожаем
+        Humanoid = hum,
+    }
+end
+
+local function ensureESP(plr)
+    if plr == LocalPlayer then return end
+
+    -- если нет персонажа — чистим ESP
+    if not plr.Character or not plr.Character.Parent then
+        clearPlrESP(plr)
+        return
+    end
+
+    local data = espData[plr]
+    if not data then
+        createESP(plr)
+        return
+    end
+
+    -- если персонаж сменился — пересоздаем, но НЕ удаляем сам персонаж
+    if data.Character ~= plr.Character then
+        clearPlrESP(plr)
+        createESP(plr)
+        return
+    end
+
+    -- если GUI/instances исчезли (например, CoreGui чистили) — пересоздаем
+    if (not data.Highlight or not data.Highlight.Parent) or (not data.Billboard or not data.Billboard.Parent) then
+        clearPlrESP(plr)
+        createESP(plr)
+        return
+    end
+end
+
+local function hookPlayer(plr)
+    if plr == LocalPlayer then return end
+
+    disconnectCharCons(plr)
+    _charCons[plr] = {}
+
+    -- Когда появился персонаж
+    table.insert(_charCons[plr], plr.CharacterAdded:Connect(function()
+        -- небольшая задержка чтобы части успели появиться
+        task.defer(function()
+            ensureESP(plr)
+        end)
+    end))
+
+    -- Когда персонаж удаляется (смерть/респавн)
+    table.insert(_charCons[plr], plr.CharacterRemoving:Connect(function()
+        clearPlrESP(plr)
+    end))
+
+    -- если уже есть персонаж
+    if plr.Character then
+        ensureESP(plr)
+    end
 end
 
 return {
@@ -121,18 +205,27 @@ return {
     },
 
     OnEnable = function(ctx)
-        -- 1. ПОЛНАЯ ОЧИСТКА ПЕРЕД ВКЛЮЧЕНИЕМ
-        for plr, _ in pairs(espData) do clearPlrESP(plr) end
+        -- очистка на всякий
+        for plr, _ in pairs(espData) do
+            clearPlrESP(plr)
+        end
         espData = {}
 
-        -- 2. МГНОВЕННОЕ СОЗДАНИЕ ДЛЯ ТЕХ КТО УЖЕ ТУТ
+        -- подписки на игроков
         for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character then
-                createESP(plr)
-            end
+            hookPlayer(plr)
         end
 
-        -- 3. СОЕДИНЕНИЯ
+        table.insert(_connections, Players.PlayerAdded:Connect(function(plr)
+            hookPlayer(plr)
+        end))
+
+        table.insert(_connections, Players.PlayerRemoving:Connect(function(plr)
+            disconnectCharCons(plr)
+            clearPlrESP(plr)
+        end))
+
+        -- основной апдейт
         table.insert(_connections, RunService.RenderStepped:Connect(function()
             local showBox = ctx:GetSetting("Show Box")
             local showName = ctx:GetSetting("Show Name")
@@ -146,48 +239,53 @@ return {
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr == LocalPlayer then continue end
 
-                local data = espData[plr]
+                ensureESP(plr)
 
-                -- Если данных нет или персонаж сменился — пересоздаем
-                if not data or data[3] ~= plr.Character or not data[3].Parent then
-                    if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                        clearPlrESP(plr)
-                        createESP(plr)
-                    end
+                local data = espData[plr]
+                if not data then continue end
+
+                local char = data.Character
+                if not (char and char.Parent) then
+                    data.Highlight.Enabled = false
+                    data.Billboard.Enabled = false
                     continue
                 end
 
-                local highlight, billboard, char, label = data[1], data[2], data[3], data[4]
-
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    highlight.Enabled = showBox
-                    highlight.OutlineTransparency = showBox and 0 or 1
-
-                    billboard.Enabled = showName
-                    label.Visible = showName
-                    label.TextSize = textSize
-                    label.Text = getPlrName(plr, nameMode)
-                    label.BackgroundTransparency = showBg and 0.45 or 1
-                else
-                    highlight.Enabled = false
-                    billboard.Enabled = false
+                -- если вдруг HRP пропал
+                if not char:FindFirstChild("HumanoidRootPart") then
+                    data.Highlight.Enabled = false
+                    data.Billboard.Enabled = false
+                    continue
                 end
-            end
-        end))
 
-        table.insert(_connections, Players.PlayerRemoving:Connect(function(plr)
-            clearPlrESP(plr)
+                data.Highlight.Enabled = showBox
+                data.Highlight.OutlineTransparency = showBox and 0 or 1
+
+                data.Billboard.Enabled = showName
+                data.Label.Visible = showName
+                data.Label.TextSize = textSize
+                data.Label.Text = getPlrName(plr, nameMode)
+                data.Label.BackgroundTransparency = showBg and 0.45 or 1
+            end
         end))
     end,
 
     OnDisable = function(ctx)
+        -- отключаем коннекты
         for _, conn in ipairs(_connections) do
-            if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
+            if typeof(conn) == "RBXScriptConnection" then
+                conn:Disconnect()
+            end
         end
         _connections = {}
 
-        updateOriginalNames(false)
+        -- отключаем коннекты персонажей
+        for plr, _ in pairs(_charCons) do
+            disconnectCharCons(plr)
+        end
 
+        -- возвращаем оригинальные неймтеги
+        updateOriginalNames(false)
         for hum, oldType in pairs(originalNameType) do
             if hum and hum.Parent then
                 hum.DisplayDistanceType = oldType
@@ -195,6 +293,7 @@ return {
             originalNameType[hum] = nil
         end
 
+        -- чистим ESP объекты (НЕ персонажей!)
         for plr, _ in pairs(espData) do
             clearPlrESP(plr)
         end
