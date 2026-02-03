@@ -3,90 +3,68 @@ local sha = getgenv().LatestSHA or "main"
 local discordLink = "https://discord.gg/R7ABPb2f"
 
 local http = game:GetService("HttpService")
-local startTime = os.clock() -- Фиксируем время старта
+local startTime = os.clock()
 
--- Функция для красивых логов
-local function log(mode, msg)
-    local prefix = "[Heaven]"
-    local timestamp = os.date("%H:%M:%S")
-    if mode == "info" then
-        print(string.format("%s [%s] (INFO): %s", prefix, timestamp, msg))
-    elseif mode == "warn" then
-        warn(string.format("%s [%s] (WARN): %s", prefix, timestamp, msg))
-    elseif mode == "error" then
-        error(string.format("%s [%s] (ERROR): %s", prefix, timestamp, msg))
-    end
-end
+local loggerRaw = game:HttpGet("https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/Logger.lua")
+local LoggerClass = getgenv().LoggerInstance or loadstring(game:HttpGet(loggerRaw))()
+local log = LoggerClass.new("[Heaven]")
 
-log("info", "Starting bootstrapper...")
+log:Info("Starting bootstrapper...")
 
--- Проверка папки проекта
-local api = "https://api.github.com/repos/Okayevls/unknown-heaven/contents/scripts"
-local success, result = pcall(function() return http:JSONDecode(game:HttpGet(api)) end)
-
-if not success or type(result) ~= "table" then
-    log("error", "GitHub API is unavailable or rate limited.")
-    return
-end
-
-local exists = false
-for _, item in ipairs(result) do
-    if item.type == "dir" and item.name == project then exists = true break end
-end
-
-if not exists then
+local success, result = pcall(function() return http:JSONDecode(game:HttpGet("https://api.github.com/repos/Okayevls/unknown-heaven/contents/scripts")) end)
+local folder = success and type(result) == "table" and table.find(result, function(v) return v.name == project end)
+if not success then return log:Error("GitHub API rate limited.") end
+if not folder then
     if setclipboard then setclipboard(discordLink) end
-    log("warn", "Project '"..tostring(project).."' not found. Join Discord: " .. discordLink)
-    return
+    return log:Warn("Project '"..tostring(project).."' not found (close or update). Invite copied.")
 end
 
--- Загрузка утилит
-log("info", "Loading FastDownloader...")
+log:Info("Loading FastDownloader...")
 local downloaderRaw = game:HttpGet("https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/FastDownloader.lua")
 local downloader = loadstring(downloaderRaw)()
 
-log("info", "Initializing Injector...")
+log:Info("Initializing Injector...")
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
 
--- Сканирование модулей
-log("info", "Scanning for modules in " .. project .. "...")
+log:Info("Scanning for modules in " .. project .. "...")
 local ModuleScanner = inject:Load("source/util/module/ModuleScanner.lua")
 local scanner = ModuleScanner.new("Okayevls", "unknown-heaven")
 local moduleFiles = scanner:GetModules(project)
 
-log("info", string.format("Found %d modules.", #moduleFiles))
+log:Info(string.format("Found %d modules.", #moduleFiles))
 
--- Менеджеры
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
 
 local moduleMgr = ModuleManager.new()
 local reg = ModuleRegistryManager.new(moduleFiles)
 
--- Регистрация модулей с отловом ошибок
-log("info", "Registering modules...")
+log:Info("Registering modules...")
+
+local loadedCount = 0
 local listByCategory = reg:LoadAll(function(path)
-    log("info", "  -> Loading: " .. path)
+    loadedCount = loadedCount + 1
+    log:LogLoading(loadedCount, path)
     return inject:Load(path)
 end)
 moduleMgr:RegisterFromList(listByCategory)
 
--- Глобальный контекст
+log:Info("Successfully registered all modules.")
+
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
-    DebugMode = true -- Добавим флаг отладки
+    DebugMode = true
 }
 
--- Запуск GUI
-log("info", "Launching UI...")
+log:Info("Launching UI...")
 local guiSuccess, guiErr = pcall(function()
     inject:Load("source/panel/mainGui/ClickGui.lua")
 end)
 
 if not guiSuccess then
-    log("error", "GUI failed to load: " .. tostring(guiErr))
+    log:Error("GUI failed to load: " .. tostring(guiErr))
 else
     local duration = string.format("%.2f", os.clock() - startTime)
-    log("info", "Heaven loaded successfully in " .. duration .. "s!")
+    log:Info("Heaven loaded successfully in " .. duration .. "s!")
 end
