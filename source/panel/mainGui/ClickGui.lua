@@ -977,9 +977,6 @@ local function moduleCard(tabName, mName, desc)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
             local settings = st.Definition.Settings
             if not settings or #settings == 0 then
-                tween(card, 0.1, {BackgroundColor3 = Color3.fromRGB(255, 200, 200)})
-                task.wait(0.1)
-                tween(card, 0.1, {BackgroundColor3 = Theme.Panel})
                 return
             end
 
