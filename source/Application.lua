@@ -8,7 +8,7 @@ if success and data and data.sha then
     local sha = data.sha
     getgenv().LatestSHA = sha
     local url = string.format("https://raw.githubusercontent.com/Okayevls/unknown-heaven/%s/source/Bootstrap.lua?v=%s", sha, os.time())
-    print("[Heaven]: Running version " .. sha:sub(1, 7))
+    
     local ok, err = pcall(function()
         loadstring(game:HttpGet(url))()
     end)
