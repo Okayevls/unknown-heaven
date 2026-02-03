@@ -1,3 +1,10 @@
-[main 53b6f0c] Auto-commit 03.02.2026 13:13:29,78
- 3 files changed, 14 insertions(+), 72 deletions(-)
- delete mode 100644 source/util/offsets/Service.lua
+[main 741f87d] Auto-commit 03.02.2026 14:25:49,86
+ 11 files changed, 737 insertions(+), 305 deletions(-)
+ create mode 100644 scripts/ModuleList.lua
+ create mode 100644 scripts/ModuleManager.lua
+ delete mode 100644 source/panel/mainGui/Category.lua
+ delete mode 100644 source/panel/mainGui/setting/BooleanSetting.lua
+ delete mode 100644 source/panel/mainGui/setting/ModeSetting.lua
+ delete mode 100644 source/panel/mainGui/setting/MultiBooleanSetting.lua
+ delete mode 100644 source/panel/mainGui/setting/SliderSetting.lua
+ delete mode 100644 source/panel/mainGui/setting/StringSetting.lua
