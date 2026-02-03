@@ -1,2 +1,6 @@
-[main 26146cb] Auto-commit 03.02.2026 14:42:00,39
- 2 files changed, 29 insertions(+), 30 deletions(-)
+[main 1862471] Auto-commit 03.02.2026 15:00:51,58
+ 7 files changed, 30 insertions(+), 385 deletions(-)
+ create mode 100644 scripts/RoStreet/ModuleRegistryList.lua
+ delete mode 100644 source/panel/loaderGui/LoaderPanel.lua
+ rename {scripts => source/util/module}/ModuleManager.lua (100%)
+ rename scripts/ModuleRegistry.lua => source/util/module/ModuleRegistryManager.lua (100%)
