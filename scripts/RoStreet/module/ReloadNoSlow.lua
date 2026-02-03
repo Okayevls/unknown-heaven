@@ -41,9 +41,11 @@ return {
         _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
             if processed then return end
             if input.KeyCode == Enum.KeyCode.R then
+                print("2222")
                 local weapon = getEquippedWeapon()
                 if weapon and weapon:FindFirstChild("Reload") then
                     weapon.Reload:InvokeServer()
+                    print("111")
                 end
             end
         end)
