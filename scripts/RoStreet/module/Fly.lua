@@ -33,8 +33,6 @@ return {
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if not hrp or not hum then return end
 
-        resetKeys()
-
         connectionRenderStepped = RunService.RenderStepped:Connect(function()
             if not hrp or not hrp.Parent then
                 hrp = character:FindFirstChild("HumanoidRootPart")
