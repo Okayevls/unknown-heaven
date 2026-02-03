@@ -3,8 +3,9 @@ local RedeemRemote = nil
 local isFunction = false
 
 local CODES = {
-    "20MVISITS",
-    "20KLIKES",
+    "HAPPYNEWYEAR2026",
+    "25MVISITS",
+    "25KLIKES",
     "StarCity"
 }
 
