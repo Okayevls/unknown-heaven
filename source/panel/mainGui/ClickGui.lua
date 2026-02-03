@@ -1622,14 +1622,13 @@ local function toggleUI(state)
     main.Visible = uiVisible
 
     UserInputService.MouseIconEnabled = uiVisible
+    
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 
-    if uiVisible then
+    task.defer(function()
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    else
-        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    end
+    end)
 end
-
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
