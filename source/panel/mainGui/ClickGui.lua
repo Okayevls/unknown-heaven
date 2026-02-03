@@ -143,10 +143,10 @@ end
 
 local State = {
     Theme = {Accent = Theme.Accent},
-    LastUpdate = "19.01.2026",
+    LastUpdate = "03.02.2026",
     User = {
-        Email = "example@gmail.com",
-        SubDate = "10.12.2029",
+        Email = "comingsoon@gmail.com",
+        SubDate = "01.01.2027",
         Role = "Beta",
     }
 }
