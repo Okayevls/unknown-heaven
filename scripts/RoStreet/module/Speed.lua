@@ -1,7 +1,5 @@
 local Players = game:GetService("Players")
-local event = getgenv().ctx.e
-
-event.new("Speed")
+getgenv().ctx.e.new("Speed")
 
 return {
     Name = "Speed",
