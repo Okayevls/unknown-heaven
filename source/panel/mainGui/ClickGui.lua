@@ -1616,19 +1616,33 @@ end
 
 local uiVisible = true
 
+local _prevMouseIconEnabled = UserInputService.MouseIconEnabled
+local _prevMouseBehavior = UserInputService.MouseBehavior
+
+local function restoreMouse()
+    UserInputService.MouseIconEnabled = _prevMouseIconEnabled
+    UserInputService.MouseBehavior = _prevMouseBehavior
+end
+
 local function toggleUI(state)
     uiVisible = state
     dim.Visible = uiVisible
     main.Visible = uiVisible
 
-    UserInputService.MouseIconEnabled = uiVisible
-    
-    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-
-    task.defer(function()
+    if uiVisible then
+        UserInputService.MouseIconEnabled = true
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    end)
+    else
+        restoreMouse()
+        UserInputService.MouseIconEnabled = true
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
 end
+
+screenGui.Destroying:Connect(function()
+    restoreMouse()
+end)
+
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
