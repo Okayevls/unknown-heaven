@@ -303,9 +303,6 @@ local settingsCloseOverlay = mk("TextButton", {
     Size=UDim2.fromScale(1,1),
 }, content)
 
---settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
---settingsCloseOverlay.MouseButton1Down:Connect(closeSettings)
-
 local settingsPane = mk("Frame", {
     Name="SettingsPane",
     BackgroundColor3=Theme.Panel2,
@@ -313,9 +310,7 @@ local settingsPane = mk("Frame", {
     Position=UDim2.new(1,0,0,0),
 
     Size=UDim2.new(0, 300, 1, 0),
-
     Visible=false,
-    Active = true,
 }, content)
 addCorner(settingsPane, Theme.RoundSmall)
 addStroke(settingsPane, 0)
@@ -364,7 +359,6 @@ local settingsContainer = mk("ScrollingFrame", {
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0,0,0,0),
 
-    Active = true, -- ДОБАВИТЬ ЭТО
     ClipsDescendants = true,
 }, settingsPane)
 
@@ -408,25 +402,9 @@ local function closeSettings()
 end
 
 settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
-
 settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
-
-settingsCloseOverlay.MouseButton1Down:Connect(function()
-    -- Проверяем координаты мыши
-    local mousePos = UserInputService:GetMouseLocation()
-    local panePos = settingsPane.AbsolutePosition
-    local paneSize = settingsPane.AbsoluteSize
-
-    -- Если мышь ВНУТРИ области панели настроек — ничего не делаем
-    if mousePos.X >= panePos.X and mousePos.X <= (panePos.X + paneSize.X) and
-            mousePos.Y >= panePos.Y and mousePos.Y <= (panePos.Y + paneSize.Y) then
-        return
-    end
-
-    -- Если мышь ВНЕ панели — закрываем
-    closeSettings()
-end)
+settingsCloseOverlay.MouseButton1Click:Connect(closeSettings)
 
 local function createMiniToggle(parent)
     local root = mk("Frame", {BackgroundColor3=Theme.Panel, Size=UDim2.fromOffset(38, 20)}, parent)
@@ -678,7 +656,6 @@ local function addSliderSetting(tab, moduleName, sDef)
     trackConn(bar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            i.ProcessedEvent = true
             updateFromX(i.Position.X)
             tween(knob, 0.12, {Size = UDim2.fromOffset(16,16)})
         end
@@ -1613,22 +1590,13 @@ do
 end
 
 local uiVisible = true
-
-local function toggleUI(state)
-    uiVisible = state
-    dim.Visible = uiVisible
-    main.Visible = uiVisible
-
-    UserInputService.MouseIconEnabled = uiVisible
-    UserInputService.MouseBehavior = uiVisible and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
-end
-
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
-        toggleUI(not uiVisible)
+        uiVisible = not uiVisible
+        dim.Visible = uiVisible
+        main.Visible = uiVisible
     end
 end)
 
-toggleUI(true)
 applyTheme()
