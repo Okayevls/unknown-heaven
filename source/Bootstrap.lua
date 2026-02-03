@@ -44,7 +44,7 @@ log:Info(string.format("Found %d modules.", #moduleFiles))
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
 
-local moduleMgr = ModuleManager.new()
+local moduleMgr = (getgenv().ctx and getgenv().ctx.moduleMgr) or ModuleManager.new()
 local reg = ModuleRegistryManager.new(moduleFiles)
 
 log:Info("Registering modules...")
