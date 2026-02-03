@@ -8,4 +8,5 @@ return {
     "scripts/RoStreet/module/Esp.lua",
     "scripts/RoStreet/module/SilentAim.lua",
     "scripts/RoStreet/module/FastReload.lua",
+    "scripts/RoStreet/module/ReloadNoSlow.lua",
 }
