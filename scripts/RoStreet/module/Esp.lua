@@ -11,9 +11,11 @@ espFolder.Parent = CoreGui
 local espData = {}
 local _connections = {}
 
+-- Настройки визуализации
 local ESP_SETTINGS = {
     Color = Color3.fromRGB(255, 255, 255),
-    MaxDistance = math.huge,
+    OutlineTransparency = 0,
+    FillTransparency = 1,
 }
 
 local function updateOriginalNames(hide)
@@ -47,10 +49,12 @@ local function getPlrName(plr, mode)
     end
 end
 
+-- Функция создания объектов
 local function createESP(plr)
     local char = plr.Character
     if not char then return end
 
+    -- Ждем корень, но не вечно
     local root = char:WaitForChild("HumanoidRootPart", 5)
     if not root then return end
     local head = char:FindFirstChild("Head") or root
@@ -58,7 +62,7 @@ local function createESP(plr)
     local highlight = Instance.new("Highlight")
     highlight.Name = plr.Name .. "_Highlight"
     highlight.Adornee = char
-    highlight.FillTransparency = 1
+    highlight.FillTransparency = ESP_SETTINGS.FillTransparency
     highlight.OutlineColor = ESP_SETTINGS.Color
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     highlight.Enabled = false
@@ -81,7 +85,7 @@ local function createESP(plr)
     label.BackgroundColor3 = Color3.new(0,0,0)
     label.TextColor3 = ESP_SETTINGS.Color
     label.Font = Enum.Font.Gotham
-    label.Text = plr.Name
+    label.Text = getPlrName(plr, "Display") -- Временное имя
     label.BorderSizePixel = 0
     label.Parent = billboard
 
@@ -111,27 +115,41 @@ return {
     },
 
     OnEnable = function(ctx)
-        local isEnabled = true
-
+        -- Функция обработки игрока
         local function handlePlr(plr)
             if plr == LocalPlayer then return end
 
-            local function onChar()
-                task.wait(0.5)
-                if isEnabled and plr.Parent and plr.Character then
-                    clearPlrESP(plr)
-                    createESP(plr)
-                end
-            end
+            -- Очищаем старое если было
+            clearPlrESP(plr)
 
-            table.insert(_connections, plr.CharacterAdded:Connect(onChar))
-            if plr.Character then createESP(plr) end
+            -- Слушаем респавн
+            local conn = plr.CharacterAdded:Connect(function(char)
+                task.wait(0.5) -- Даем время персонажу прогрузиться в Workspace
+                clearPlrESP(plr)
+                createESP(plr)
+            end)
+            table.insert(_connections, conn)
+
+            -- Если уже в игре
+            if plr.Character then
+                createESP(plr)
+            end
         end
 
-        for _, plr in ipairs(Players:GetPlayers()) do handlePlr(plr) end
-        table.insert(_connections, Players.PlayerAdded:Connect(handlePlr))
-        table.insert(_connections, Players.PlayerRemoving:Connect(clearPlrESP))
+        -- Инициализация всех
+        for _, plr in ipairs(Players:GetPlayers()) do
+            handlePlr(plr)
+        end
 
+        -- Новые игроки
+        table.insert(_connections, Players.PlayerAdded:Connect(handlePlr))
+
+        -- Удаление при выходе
+        table.insert(_connections, Players.PlayerRemoving:Connect(function(plr)
+            clearPlrESP(plr)
+        end))
+
+        -- Основной цикл обновления (RenderStepped)
         table.insert(_connections, RunService.RenderStepped:Connect(function()
             local showBox = ctx:GetSetting("Show Box")
             local showName = ctx:GetSetting("Show Name")
@@ -143,8 +161,15 @@ return {
             updateOriginalNames(hideNames)
 
             for plr, data in pairs(espData) do
+                -- Если игрок вышел или персонаж удален из игры вообще
+                if not plr or not plr.Parent then
+                    clearPlrESP(plr)
+                    continue
+                end
+
                 local highlight, billboard, char, label = data[1], data[2], data[3], data[4]
 
+                -- ПРОВЕРКА НА РЕСПАВН (ФИКС ПРОПАДАНИЯ)
                 if plr.Character and plr.Character ~= char then
                     clearPlrESP(plr)
                     createESP(plr)
@@ -152,9 +177,11 @@ return {
                 end
 
                 if char and char.Parent and char:FindFirstChild("HumanoidRootPart") then
+                    -- Состояние Box
                     highlight.Enabled = showBox
                     highlight.OutlineTransparency = showBox and 0 or 1
 
+                    -- Состояние Имени
                     billboard.Enabled = showName
                     label.Visible = showName
                     label.TextSize = textSize
@@ -166,11 +193,10 @@ return {
                 end
             end
         end))
-
-        ctx.OnDisableFolder = function() isEnabled = false end
     end,
 
     OnDisable = function(ctx)
+        -- Отключаем все события (Events)
         for _, conn in ipairs(_connections) do
             if typeof(conn) == "RBXScriptConnection" then
                 conn:Disconnect()
@@ -178,8 +204,13 @@ return {
         end
         _connections = {}
 
+        -- Возвращаем стандартные ники
         updateOriginalNames(false)
-        for plr, _ in pairs(espData) do clearPlrESP(plr) end
+
+        -- Чистим объекты из игры
+        for plr, _ in pairs(espData) do
+            clearPlrESP(plr)
+        end
         espData = {}
     end,
 }
