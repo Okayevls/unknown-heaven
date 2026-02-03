@@ -1,4 +1,5 @@
 local TextChatService = game:GetService("TextChatService")
+local GetStartState = false
 
 return {
     Name = "ChatSpy",
@@ -9,10 +10,11 @@ return {
     Settings = {},
 
     OnEnable = function(ctx)
+        GetStartState = TextChatService.ChatWindowConfiguration.Enabled
         TextChatService.ChatWindowConfiguration.Enabled = true
     end,
 
     OnDisable = function(ctx)
-        TextChatService.ChatWindowConfiguration.Enabled = false
+        TextChatService.ChatWindowConfiguration.Enabled = GetStartState
     end,
 }
