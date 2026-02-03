@@ -9,4 +9,5 @@ return {
     "scripts/RoStreet/module/SilentAim.lua",
     "scripts/RoStreet/module/FastReload.lua",
     "scripts/RoStreet/module/ReloadNoSlow.lua",
+    "scripts/RoStreet/module/KickTarget.lua",
 }
