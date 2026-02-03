@@ -47,9 +47,9 @@ local function getPlrName(plr, mode)
 end
 
 local function createESP(plr)
-    local char = plr.Character
-    if not char then return end
+    if not plr.Character then return end
 
+    local char = plr.Character
     local root = char:WaitForChild("HumanoidRootPart", 5)
     if not root then return end
     local head = char:FindFirstChild("Head") or root
@@ -79,7 +79,7 @@ local function createESP(plr)
     label.BackgroundTransparency = 1
     label.BackgroundColor3 = Color3.new(0,0,0)
     label.TextColor3 = ESP_SETTINGS.Color
-    label.Font = Enum.Font.Gotham
+    label.Font = Enum.Font.GothamBold
     label.BorderSizePixel = 0
     label.Parent = billboard
 
@@ -95,7 +95,7 @@ end
 
 return {
     Name = "ESP",
-    Desc = "Подсветка игроков без багов при респавне",
+    Desc = "Подсветка игроков без багов при включении",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -109,10 +109,18 @@ return {
     },
 
     OnEnable = function(ctx)
-        -- Чистим старое на старте
+        -- 1. ПОЛНАЯ ОЧИСТКА ПЕРЕД ВКЛЮЧЕНИЕМ
+        for plr, _ in pairs(espData) do clearPlrESP(plr) end
         espData = {}
 
-        -- Основной цикл обновления (теперь он и есть "двигатель" создания ESP)
+        -- 2. МГНОВЕННОЕ СОЗДАНИЕ ДЛЯ ТЕХ КТО УЖЕ ТУТ
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                createESP(plr)
+            end
+        end
+
+        -- 3. СОЕДИНЕНИЯ
         table.insert(_connections, RunService.RenderStepped:Connect(function()
             local showBox = ctx:GetSetting("Show Box")
             local showName = ctx:GetSetting("Show Name")
@@ -128,7 +136,7 @@ return {
 
                 local data = espData[plr]
 
-                -- ПРОВЕРКА: Если игрока нет в базе или его персонаж сменился/умер
+                -- Если данных нет или персонаж сменился — пересоздаем
                 if not data or data[3] ~= plr.Character or not data[3].Parent then
                     if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                         clearPlrESP(plr)
@@ -155,23 +163,19 @@ return {
             end
         end))
 
-        -- Удаляем данные при выходе игрока
         table.insert(_connections, Players.PlayerRemoving:Connect(function(plr)
             clearPlrESP(plr)
         end))
     end,
 
     OnDisable = function(ctx)
-        -- Отключаем все циклы
         for _, conn in ipairs(_connections) do
             if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
         end
         _connections = {}
 
-        -- Возвращаем имена
         updateOriginalNames(false)
 
-        -- Чистим объекты
         for plr, _ in pairs(espData) do
             clearPlrESP(plr)
         end
