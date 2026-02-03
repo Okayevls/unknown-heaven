@@ -17,20 +17,16 @@ getgenv().DefaultLogger = self
    return self
 end
 
-function Logger:GetTimestamp()
-   return os.date("%H:%M:%S")
-end
-
 function Logger:Info(msg: string)
-   print(string.format("%s [%s] (INFO): %s", self.prefix, self:GetTimestamp(), msg))
+   print(string.format("%s (INFO): %s", self.prefix, msg))
 end
 
 function Logger:Warn(msg: string)
-   warn(string.format("%s [%s] (WARN): %s", self.prefix, self:GetTimestamp(), msg))
+   warn(string.format("%s (WARN): %s", self.prefix, msg))
 end
 
 function Logger:Error(msg: string)
-   warn(string.format("%s [%s] (CRITICAL): %s", self.prefix, self:GetTimestamp(), msg))
+   warn(string.format("%s (CRITICAL): %s", self.prefix, msg))
 end
 
 function Logger:LogLoading(index: number, path: string)
