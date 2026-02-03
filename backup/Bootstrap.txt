@@ -35,15 +35,21 @@ log:Info("Initializing Injector...")
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
 
 log:Info("Scanning for modules in " .. project .. "...")
+--local ModuleScanner = inject:Load("source/util/module/ModuleScanner.lua")
+--local scanner = ModuleScanner.new("Okayevls", "unknown-heaven")
+--local moduleFiles = scanner:GetModules(project)
+
+--log:Info(string.format("Found %d modules.", #moduleFiles))
 
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
 
 local moduleMgr = (getgenv().ctx and getgenv().ctx.moduleMgr) or ModuleManager.new()
 
-local listPath = string.format("scripts/%s/Modules.lua", project)
+local listPath = string.format("scripts/%s/ModuleRegistryList.lua", project)
 local moduleRegistryList = inject:Load(listPath)
 local reg = ModuleRegistryManager.new(moduleRegistryList)
+--local reg = ModuleRegistryManager.new(moduleFiles)
 
 log:Info("Registering modules...")
 
