@@ -40,7 +40,7 @@ function OpenURI.loading(config, discordLink)
     local allowed = OpenURI:verify_access()
 
     if allowed and _ctx then
-        _ctx.Meta.Subscription = OpenURI.SubscriptionStatus
+        _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
     end
 
     return OpenURI:loadUtil()
@@ -92,28 +92,27 @@ function OpenURI:verify_access()
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
         if allowed_id == current_id then
-            if expiry_str == "" or now < parse_expiry(expiry_str) then
+            local exp_ts = parse_expiry(expiry_str)
+            if now < exp_ts then
+                OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
                 return true
             end
         end
     end
 
-    local success, content = pcall(function()
-        return game:HttpGet(_list)
-    end)
-
+    local success, content = pcall(function() return game:HttpGet(_list) end)
     if success then
         for line in content:gmatch("[^\r\n]+") do
             local clean_line = line:gsub("%s+", "")
             local allowed_id, expiry_str = clean_line:match("([^:]+):?(.*)")
             if allowed_id == current_id then
-                if expiry_str == "" or now < parse_expiry(expiry_str) then
+                local exp_ts = parse_expiry(expiry_str)
+                if now < exp_ts then
+                    OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
                     return true
                 end
             end
         end
-    else
-        warn("[OpenURI] Failed to fetch remote whitelist")
     end
 
     return false
@@ -130,7 +129,7 @@ function OpenURI:loadUtil()
 
         while true do
             if player then player:Kick(kickMessage) end
-            task.wait(0.1)
+            task.wait(0.2)
             pcall(function() local _ = game.NonExistentService.Exit end)
         end
 
