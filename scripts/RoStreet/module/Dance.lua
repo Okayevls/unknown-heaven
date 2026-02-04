@@ -4,23 +4,12 @@ local LocalPlayer = Players.LocalPlayer
 local currentDanceTrack = nil
 local settingsConnection = nil
 
-local r6_dances = {
-    ["Dance 1"] = "27789359", ["Dance 2"] = "30196114", ["Dance 3"] = "248263260",
-    ["Robot"] = "45834924", ["Bunny"] = "33796059", ["Wave"] = "28488254", ["Laugh"] = "52155728"
-}
-
 local r15_dances = {
     ["Dance 1"] = "3333432454", ["Dance 2"] = "4555808220", ["Dance 3"] = "4049037604",
     ["Tilt"] = "4555782893", ["Joy"] = "10214311282", ["Hyped"] = "10714010337",
     ["Old School"] = "10713981723", ["Monkey"] = "10714372526",
     ["Shuffle"] = "10714076981", ["Line"] = "10714392151", ["Pop"] = "11444443576"
 }
-
-local function isR15(player)
-    local character = player.Character
-    local humanoid = character and character:FindFirstChild("Humanoid")
-    return humanoid and humanoid.RigType == Enum.HumanoidRigType.R15 or false
-end
 
 local function toggleWalkAnim(state)
     local char = LocalPlayer.Character
@@ -42,7 +31,7 @@ local function refresh(ctx)
     end
 
     local selectedStyle = ctx:GetSetting("Style")
-    local animationId = isR15(LocalPlayer) and (r15_dances[selectedStyle] or r15_dances["Dance 1"]) or (r6_dances[selectedStyle] or r6_dances["Dance 1"])
+    local animationId = (r15_dances[selectedStyle] or r15_dances["Dance 1"])
 
     local animation = Instance.new("Animation")
     animation.AnimationId = "rbxassetid://" .. animationId
@@ -65,7 +54,7 @@ return {
             Type = "ModeSetting",
             Name = "Style",
             Default = "Dance 1",
-            Options = {"Dance 1", "Dance 2", "Dance 3", "Robot", "Bunny", "Wave", "Laugh", "Tilt", "Joy", "Hyped", "Old School", "Monkey", "Shuffle", "Line", "Pop"}
+            Options = {"Dance 1", "Dance 2", "Dance 3", "Tilt", "Joy", "Hyped", "Old School", "Monkey", "Shuffle", "Line", "Pop"}
         },
         { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
