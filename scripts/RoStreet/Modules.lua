@@ -1,7 +1,6 @@
 return {
     Meta = {
-        LastUpdate = "04.02.2026",
-        SubDate = "01.01.2026-23:59"
+        LastUpdate = "04.02.2026"
     },
 
     Modules = {
