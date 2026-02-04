@@ -13,7 +13,7 @@ OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
-local UTC_OFFSET = 2
+local TIME_ZONE_OFFSET = 2
 
 local function get_world_time()
     local success, result = pcall(function()
@@ -23,55 +23,40 @@ local function get_world_time()
             local day, month_str, year, hour, min, sec = date_str:match("%a+, (%d+) (%a+) (%d+) (%d+):(%d+):(%d+)")
             local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
 
-            local utc_timestamp = os.time({
+            local utc = os.time({
                 day=tonumber(day), month=months[month_str], year=tonumber(year),
                 hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
             })
-            return utc_timestamp + (UTC_OFFSET * 3600)
+            return utc
         end
     end)
-
-    local finalTime = success and result or (os.time())
-    warn("[OpenURI] Adjusted Network Time: " .. os.date("%d.%m.%Y-%H:%M", finalTime))
-    return finalTime
+    return success and result or os.time()
 end
 
-local function parse_expiry(date_str)
+local function parse_to_utc(date_str)
     if not date_str or date_str == "" then return math.huge end
     local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
     if day then
-        return os.time({
-            day = tonumber(day),
-            month = tonumber(month),
-            year = tonumber(year),
-            hour = tonumber(hour),
-            min = tonumber(min),
-            sec = 0
+        local local_ts = os.time({
+            day = tonumber(day), month = tonumber(month), year = tonumber(year),
+            hour = tonumber(hour), min = tonumber(min), sec = 0
         })
+        return local_ts - (TIME_ZONE_OFFSET * 3600)
     end
     return math.huge
 end
 
 function OpenURI.loading(config, discordLink)
     if discordLink then OpenURI.discordLink = discordLink end
-    if type(config) == "table" and config.System then
-        OpenURI.jetK = config.System
+    OpenURI.jetK = (type(config) == "table" and config.System) or {}
+
+    local is_allowed = OpenURI:verify_access()
+
+    if getgenv().ctx and getgenv().ctx.Meta then
+        getgenv().ctx.Meta.SubDate = OpenURI.SubscriptionStatus
     end
 
-    local allowed = OpenURI:verify_access()
-    local _ctx = getgenv().ctx
-
-    if _ctx and _ctx.Meta then
-        _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
-    end
-
-    if not allowed then
-        OpenURI:loadUtil(false)
-        return false
-    end
-
-    warn("[Heaven] Access Granted: " .. OpenURI.SubscriptionStatus)
-    return true
+    return OpenURI:loadUtil(is_allowed)
 end
 
 local function get_env_score()
@@ -115,7 +100,9 @@ end
 
 function OpenURI:verify_access()
     local current_id = get_secure_id()
-    local now = get_world_time()
+    local now_utc = get_world_time()
+    
+    warn("[OpenURI] System Time (Local): " .. os.date("%H:%M", now_utc + (TIME_ZONE_OFFSET * 3600)))
 
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
@@ -125,8 +112,9 @@ function OpenURI:verify_access()
                 return true
             end
 
-            local exp_ts = parse_expiry(expiry_str)
-            if now < exp_ts then
+            local expiry_utc = parse_to_utc(expiry_str)
+
+            if now_utc < expiry_utc then
                 OpenURI.SubscriptionStatus = expiry_str
                 return true
             else
@@ -139,16 +127,11 @@ function OpenURI:verify_access()
     local success, content = pcall(function() return game:HttpGet(_list) end)
     if success then
         for line in content:gmatch("[^\r\n]+") do
-            local clean_line = line:gsub("%s+", "")
-            local allowed_id, expiry_str = clean_line:match("([^:]+):?(.*)")
-            if allowed_id == current_id then
-                if expiry_str == "" then
-                    OpenURI.SubscriptionStatus = "Infinite"
-                    return true
-                end
-                local exp_ts = parse_expiry(expiry_str)
-                if now < exp_ts then
-                    OpenURI.SubscriptionStatus = expiry_str
+            local id, exp = line:gsub("%s+", ""):match("([^:]+):?(.*)")
+            if id == current_id then
+                local exp_utc = parse_to_utc(exp)
+                if exp == "" or now_utc < exp_utc then
+                    OpenURI.SubscriptionStatus = (exp == "" and "Infinite") or exp
                     return true
                 else
                     OpenURI.SubscriptionStatus = "Expired"
