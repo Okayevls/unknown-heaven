@@ -1,5 +1,3 @@
-local _ctx = getgenv().ctx
-
 local _gethwid = gethwid
 local _identify = identifyexecutor
 local _crypt = crypt
@@ -38,9 +36,13 @@ function OpenURI.loading(config, discordLink)
     end
 
     local allowed = OpenURI:verify_access()
+    local _ctx = getgenv().ctx
 
     if allowed and _ctx and _ctx.Meta then
         _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
+        warn("[OpenURI Debug] Saved to Meta:", _ctx.Meta.SubDate)
+    else
+        warn("[OpenURI Debug] Critical Error: getgenv().ctx.Meta NOT FOUND!")
     end
 
     return OpenURI:loadUtil()
