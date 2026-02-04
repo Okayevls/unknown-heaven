@@ -13,17 +13,31 @@ OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
+local function get_world_time()
+    local success, result = pcall(function()
+        -- Используем Google для получения времени из заголовков (очень надежно)
+        local response = game:HttpGet("https://google.com", true)
+        local date_str = response:match("date: (.-\r)")
+        if date_str then
+            -- Пример формата: Wed, 04 Feb 2026 15:48:00 GMT
+            local day, month_str, year, hour, min, sec = date_str:match("%a+, (%d+) (%a+) (%d+) (%d+):(%d+):(%d+)")
+            local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
+            return os.time({
+                day=tonumber(day), month=months[month_str], year=tonumber(year),
+                hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
+            })
+        end
+    end)
+    return success and result or os.time() -- Резерв на системное время
+end
+
 local function parse_expiry(date_str)
     if not date_str or date_str == "" then return math.huge end
-
     local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
     if day then
         return os.time({
-            day = tonumber(day),
-            month = tonumber(month),
-            year = tonumber(year),
-            hour = tonumber(hour),
-            min = tonumber(min)
+            day = tonumber(day), month = tonumber(month), year = tonumber(year),
+            hour = tonumber(hour), min = tonumber(min)
         })
     end
     return math.huge
@@ -42,7 +56,13 @@ function OpenURI.loading(config, discordLink)
         _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
     end
 
-    return OpenURI:loadUtil(allowed)
+    if not allowed then
+        OpenURI:loadUtil(false)
+        return false
+    end
+
+    warn("[Heaven] Access Granted: " .. OpenURI.SubscriptionStatus)
+    return true
 end
 
 local function get_env_score()
@@ -86,7 +106,7 @@ end
 
 function OpenURI:verify_access()
     local current_id = get_secure_id()
-    local now = os.time()
+    local now = get_world_time()
 
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
@@ -127,36 +147,25 @@ end
 function OpenURI:loadUtil(forced_status)
     local is_allowed = (forced_status ~= nil) and forced_status or self:verify_access()
 
-    if is_allowed then
-        warn("[Heaven] Access Granted. Time: " .. OpenURI.SubscriptionStatus)
-        return true
-    else
-        local fingerprint = get_secure_id()
-        local player = game:GetService("Players").LocalPlayer
+    if is_allowed then return true end
+    
+    local fingerprint = get_secure_id()
+    local kickMessage = string.format(
+            "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nID copied to clipboard.",
+            OpenURI.SubscriptionStatus, fingerprint
+    )
 
-        local status_info = OpenURI.SubscriptionStatus or "Access Denied"
-        local kickMessage = string.format(
-                "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nInvite: %s\n\nID has been copied to clipboard.",
-                status_info, fingerprint, OpenURI.discordLink
-        )
-        
-        if setclipboard then pcall(function() setclipboard(fingerprint) end) end
+    if setclipboard then pcall(function() setclipboard(fingerprint) end) end
 
-        task.spawn(function()
-            while task.wait(0.1) do
-                if player then
-                    player:Kick(kickMessage)
-                end
-                pcall(function()
-                    game:Shutdown()
-                end)
-            end
-        end)
+    task.spawn(function()
+        while true do
+            pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
+            task.wait(0.1)
+        end
+    end)
 
-        task.wait(0.5)
-        error("!! ACCESS DENIED !! Status: " .. status_info)
-        return false
-    end
+    error("!! ACCESS DENIED !!")
+    return false
 end
 
 return OpenURI

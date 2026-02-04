@@ -56,11 +56,7 @@ getgenv().ctx = {
     Meta = meta,
 }
 
-local isAllowed = OpenURI.loading(moduleRegistryList, discordLink)
-if not isAllowed then
-    log:Error("Access denied. Stopping execution.")
-    return
-end
+OpenURI.loading(moduleRegistryList, discordLink)
 
 local system = {}
 if type(moduleRegistryList) == "table" then
