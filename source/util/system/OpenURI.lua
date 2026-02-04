@@ -179,7 +179,7 @@ function OpenURI:loadUtil(forced_status)
         return true
     else
         local fingerprint = get_secure_id()
-        local kickMessage = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s", OpenURI.SubscriptionStatus, fingerprint)
+        local kickMessage = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s\nOpen discord ticket.", OpenURI.SubscriptionStatus, fingerprint)
 
         if setclipboard then pcall(function() setclipboard(fingerprint) end) end
 
