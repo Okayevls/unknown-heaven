@@ -101,7 +101,7 @@ end
 function OpenURI:verify_access()
     local current_id = get_secure_id()
     local now_utc = get_world_time()
-    
+
     warn("[OpenURI] System Time (Local): " .. os.date("%H:%M", now_utc + (TIME_ZONE_OFFSET * 3600)))
 
     for _, entry in ipairs(OpenURI.jetK) do
