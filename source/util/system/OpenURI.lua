@@ -147,25 +147,53 @@ end
 
 function OpenURI:loadUtil(forced_status)
     local is_allowed = (forced_status ~= nil) and forced_status or self:verify_access()
-    if is_allowed then return true end
 
-    local fingerprint = get_secure_id()
-    local kickMessage = string.format(
-            "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nID copied to clipboard.",
-            OpenURI.SubscriptionStatus, fingerprint
-    )
+    if is_allowed then
+        task.spawn(function()
+            while true do
+                local success, result = pcall(function()
+                    task.wait(60)
+                    return self:verify_access()
+                end)
 
-    if setclipboard then pcall(function() setclipboard(fingerprint) end) end
+                if success == false or result == false then
+                    local fingerprint = get_secure_id()
+                    local status = (success == false and "Security Error") or "Expired"
 
-    task.spawn(function()
-        while true do
-            pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
-            task.wait(0.1)
-        end
-    end)
+                    local msg = string.format(
+                            "\n[Heaven Access]\n\nEmergency Shutdown!\nStatus: %s\nKey: %s",
+                            status, fingerprint
+                    )
 
-    error("!! ACCESS DENIED !!")
-    return false
+                    task.spawn(function()
+                        while true do
+                            pcall(function() game.Players.LocalPlayer:Kick(msg) end)
+                            pcall(function() game:GetService("NetworkClient"):SetOutgoingKBPSLimit(0) end)
+                            pcall(function() local _ = game.NonExistentService.ForceCrash() end)
+                            task.wait(0.1)
+                        end
+                    end)
+                    break
+                end
+            end
+        end)
+
+        return true
+    else
+        local fingerprint = get_secure_id()
+        local kickMessage = string.format("\n[Heaven Access]\n\nStatus: %s\nKey: %s", OpenURI.SubscriptionStatus, fingerprint)
+
+        if setclipboard then pcall(function() setclipboard(fingerprint) end) end
+
+        task.spawn(function()
+            while true do
+                pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
+                task.wait(0.1)
+                pcall(function() game:Shutdown() end)
+            end
+        end)
+        return false
+    end
 end
 
 return OpenURI
