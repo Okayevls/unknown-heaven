@@ -14,6 +14,8 @@ OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
 local function get_world_time()
+    local UTC_OFFSET = 2
+
     local success, result = pcall(function()
         local response = game:HttpGet("https://google.com", true)
         local date_str = response:match("date: (.-\r)")
@@ -25,12 +27,13 @@ local function get_world_time()
                 day=tonumber(day), month=months[month_str], year=tonumber(year),
                 hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
             })
-            return utc_time
+
+            return utc_time + (UTC_OFFSET * 3600)
         end
     end)
 
-    local finalTime = success and result or os.time()
-    warn("[OpenURI] Current Network Time (UTC): " .. os.date("!%d.%m.%Y-%H:%M", finalTime))
+    local finalTime = success and result or (os.time())
+    warn("[OpenURI] Adjusted Network Time: " .. os.date("%d.%m.%Y-%H:%M", finalTime))
     return finalTime
 end
 
@@ -167,7 +170,7 @@ function OpenURI:loadUtil(forced_status)
     )
 
     if setclipboard then pcall(function() setclipboard(fingerprint) end) end
-    
+
     task.spawn(function()
         while true do
             pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)

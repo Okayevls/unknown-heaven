@@ -56,7 +56,10 @@ getgenv().ctx = {
     Meta = meta,
 }
 
-OpenURI.loading(moduleRegistryList, discordLink)
+local allowed = OpenURI.loading(moduleRegistryList, discordLink)
+if not allowed then
+    return
+end
 
 local system = {}
 if type(moduleRegistryList) == "table" then
