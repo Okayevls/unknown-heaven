@@ -62,8 +62,6 @@ local maxWait = 3
 local nextFlick = tick() + math.random(minWait, maxWait)
 local isFlicking = false
 local flickEnd = 0
-local flagThreshold = 50
-
 return {
     Name = "Desync",
     Desc = "Дает огромнейшие преимущество над игроками",
@@ -103,7 +101,6 @@ return {
                             desync.teleportPosition = randomOffset
                         end
 
-
                         rootPart.CFrame = CFrame.new(desync.teleportPosition)
                         workspace.CurrentCamera.CameraSubject = desync_setback
 
@@ -111,13 +108,11 @@ return {
 
                         desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
 
+                        rootPart.CFrame = desync.old_position
 
-                        if (rootPart.Position.y > desync.old_position.y + flagThreshold) then
-                            local groundPos = getGroundLevel()
-                            rootPart.CFrame = CFrame.new(rootPart.Position.x, groundPos, rootPart.Position.z) * (desync.old_position - desync.old_position.Position)
-                            warn("⚠️ [Heaven] Anti-Cheat Setback Fix Applied")
-                        else
-                            rootPart.CFrame = desync.old_position
+                        if rootPart.CFrame.y > 3000 then
+                            rootPart.CFrame.y = getGroundLevel()
+                            desync.teleportPosition.y = getGroundLevel()
                         end
                     end
                 end
