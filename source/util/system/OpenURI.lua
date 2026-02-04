@@ -110,7 +110,7 @@ end
 function OpenURI:verify_access()
     local current_id = get_secure_id()
     local now = get_world_time()
-    
+
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
         if allowed_id == current_id then
@@ -158,7 +158,6 @@ end
 
 function OpenURI:loadUtil(forced_status)
     local is_allowed = (forced_status ~= nil) and forced_status or self:verify_access()
-
     if is_allowed then return true end
 
     local fingerprint = get_secure_id()
@@ -168,7 +167,7 @@ function OpenURI:loadUtil(forced_status)
     )
 
     if setclipboard then pcall(function() setclipboard(fingerprint) end) end
-
+    
     task.spawn(function()
         while true do
             pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
@@ -176,7 +175,7 @@ function OpenURI:loadUtil(forced_status)
         end
     end)
 
-    error("!! ACCESS DENIED !!")
+    error("!! ACCESS DENIED !! Status: " .. OpenURI.SubscriptionStatus)
     return false
 end
 
