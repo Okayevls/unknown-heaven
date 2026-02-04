@@ -22,33 +22,45 @@ for _, item in ipairs(result) do
     if item.type == "dir" and item.name == project then exists = true break end
 end
 if not exists then
-    if setclipboard then setclipboard(discordLink) end
-    log:Warn("Project '"..tostring(project).."' not found (close or update). Invite copied.")
+    if setclipboard then
+        log:Warn("Project '"..tostring(project).."' not found (close or update). Invite copied.")
+        setclipboard(discordLink)
+    else
+        log:Warn("Project '"..tostring(project).."' not found (close or update) join." ..discordLink)
+    end
     return
 end
 
-log:Info("Loading FastDownloader...")
+log:Info("Loading Downloader...")
 local downloaderRaw = game:HttpGet("https://raw.githubusercontent.com/Okayevls/unknown-heaven/"..sha.."/source/util/other/FastDownloader.lua")
 local downloader = loadstring(downloaderRaw)()
 
 log:Info("Initializing Injector...")
 local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA()
 
+local listPath = string.format("scripts/%s/Modules.lua", project)
+local moduleRegistryList = inject:Load(listPath)
+
+log:Info("Loading addition wait please...")
+local OpenURI = inject:Load("source/util/system/OpenURI.lua")
+OpenURI.loading(moduleRegistryList, discordLink)
+
+local system = {}
+if type(moduleRegistryList) == "table" then
+    system = moduleRegistryList.System or {}
+end
+log:Info("Addition loading successful...")
+
 log:Info("Scanning for modules in " .. project .. "...")
 
 local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
-
 local moduleMgr = (getgenv().ctx and getgenv().ctx.moduleMgr) or ModuleManager.new()
-
-local listPath = string.format("scripts/%s/Modules.lua", project)
-local moduleRegistryList = inject:Load(listPath)
 
 local meta = {}
 local moduleList = moduleRegistryList
-
 if type(moduleRegistryList) == "table" and moduleRegistryList.Modules then
-    meta = moduleRegistryList.Meta or {}
+    system = moduleRegistryList.System or {}
     moduleList = moduleRegistryList.Modules
 end
 
@@ -71,6 +83,7 @@ getgenv().ctx = {
     moduleMgr = moduleMgr,
     DebugMode = true,
     Meta = meta,
+    System = system,
 }
 
 log:Info("Launching UI...")
