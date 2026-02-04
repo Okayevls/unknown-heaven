@@ -15,20 +15,23 @@ OpenURI.SubscriptionStatus = "None"
 
 local function get_world_time()
     local success, result = pcall(function()
-        -- Используем Google для получения времени из заголовков (очень надежно)
         local response = game:HttpGet("https://google.com", true)
         local date_str = response:match("date: (.-\r)")
         if date_str then
-            -- Пример формата: Wed, 04 Feb 2026 15:48:00 GMT
             local day, month_str, year, hour, min, sec = date_str:match("%a+, (%d+) (%a+) (%d+) (%d+):(%d+):(%d+)")
             local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
-            return os.time({
+
+            local utc_time = os.time({
                 day=tonumber(day), month=months[month_str], year=tonumber(year),
                 hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
             })
+            return utc_time
         end
     end)
-    return success and result or os.time() -- Резерв на системное время
+
+    local finalTime = success and result or os.time()
+    warn("[OpenURI] Current Network Time (UTC): " .. os.date("!%d.%m.%Y-%H:%M", finalTime))
+    return finalTime
 end
 
 local function parse_expiry(date_str)
@@ -37,7 +40,7 @@ local function parse_expiry(date_str)
     if day then
         return os.time({
             day = tonumber(day), month = tonumber(month), year = tonumber(year),
-            hour = tonumber(hour), min = tonumber(min)
+            hour = tonumber(hour), min = tonumber(min), sec = 0
         })
     end
     return math.huge
@@ -107,13 +110,18 @@ end
 function OpenURI:verify_access()
     local current_id = get_secure_id()
     local now = get_world_time()
-
+    
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
         if allowed_id == current_id then
+            if expiry_str == "" then
+                OpenURI.SubscriptionStatus = "Infinite"
+                return true
+            end
+
             local exp_ts = parse_expiry(expiry_str)
             if now < exp_ts then
-                OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
+                OpenURI.SubscriptionStatus = expiry_str
                 return true
             else
                 OpenURI.SubscriptionStatus = "Expired"
@@ -128,9 +136,13 @@ function OpenURI:verify_access()
             local clean_line = line:gsub("%s+", "")
             local allowed_id, expiry_str = clean_line:match("([^:]+):?(.*)")
             if allowed_id == current_id then
+                if expiry_str == "" then
+                    OpenURI.SubscriptionStatus = "Infinite"
+                    return true
+                end
                 local exp_ts = parse_expiry(expiry_str)
                 if now < exp_ts then
-                    OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
+                    OpenURI.SubscriptionStatus = expiry_str
                     return true
                 else
                     OpenURI.SubscriptionStatus = "Expired"
@@ -148,7 +160,7 @@ function OpenURI:loadUtil(forced_status)
     local is_allowed = (forced_status ~= nil) and forced_status or self:verify_access()
 
     if is_allowed then return true end
-    
+
     local fingerprint = get_secure_id()
     local kickMessage = string.format(
             "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nID copied to clipboard.",
