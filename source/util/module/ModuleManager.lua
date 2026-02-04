@@ -1,3 +1,5 @@
+local GlobalSharedStorage = {}
+
 export type Bind =
 { kind: "KeyCode", code: Enum.KeyCode }
         | { kind: "UserInputType", code: Enum.UserInputType }
@@ -19,6 +21,7 @@ export type ModuleCtx = {
    SetSetting: (self: ModuleCtx, settingName: string, value: any) -> (),
    GetSettingData: (self: ModuleCtx, settingName: string) -> SettingDef?,
 
+   Shared: { [string]: any },
    SetEnabled: (self: ModuleCtx, enabled: boolean) -> (),
 }
 
@@ -28,6 +31,7 @@ export type ModuleDef = {
    Class: string?,
    Settings: { SettingDef },
 
+   AlwaysEnabled: boolean?,
    OnEnable: ((ctx: ModuleCtx) -> ())?,
    OnDisable: ((ctx: ModuleCtx) -> ())?,
 }
@@ -209,6 +213,7 @@ local ctx: ModuleCtx = {
 Category = categoryName,
 Name = moduleName,
 Class = if st then st.Definition.Class else nil,
+Shared = GlobalSharedStorage,
 
 GetSetting = function(self: ModuleCtx, settingName: string)
     return mgr:GetSetting(categoryName, moduleName, settingName)
@@ -264,6 +269,12 @@ existing.Settings[sName] = defaultSettings[sName]
 else
 existing.Settings[sName] = validateAndNormalizeSetting(sDef, cur)
 end
+end
+
+if def.AlwaysEnabled then
+task.defer(function()
+self:SetEnabled(categoryName, def.Name, true)
+end)
 end
 
 -- (опционально) удалять лишние настройки не будем (чтобы не терять данные)
@@ -359,6 +370,10 @@ end
 function ModuleManager:SetEnabled(categoryName: string, moduleName: string, enabled: boolean)
 local st = self:GetState(categoryName, moduleName)
 if not st then return end
+
+if st.Definition.AlwaysEnabled and enabled == false then
+return
+end
 
 local newValue = (enabled == true)
 if st.Enabled == newValue then return end

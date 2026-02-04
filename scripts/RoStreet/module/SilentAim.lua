@@ -229,9 +229,10 @@ return {
     Category = "Combat",
 
     Settings = {
-        { Type = "Boolean", Name = "Anti Buy", Default = false },
+        { Type = "Boolean", Name = "Anti Interaction", Default = false },
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
+        { Type = "Boolean", Name = "Reset Target On Death", Default = false },
     },
 
     OnEnable = function(ctx)
@@ -276,12 +277,14 @@ return {
                 shoot(target)
             end
 
-            ProximityPromptService.Enabled = not ctx:GetSetting("Anti Buy")
+            ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
         end)
 
         _connectionCharacterAdded = LocalPlayer.CharacterAdded:Connect(function()
-            selectedTarget = nil
-            if line then line:Remove() line = nil end
+            if ctx:GetSetting("Reset Target On Death") then
+                selectedTarget = nil
+                if line then line:Remove() line = nil end
+            end
         end)
 
         _connectionPlayerRemoving = Players.PlayerRemoving:Connect(function(player)
