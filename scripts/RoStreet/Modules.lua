@@ -11,7 +11,6 @@ return {
         "scripts/RoStreet/module/NoClip.lua",
         "scripts/RoStreet/module/Fly.lua",
         "scripts/RoStreet/module/Esp.lua",
-        "scripts/RoStreet/module/WeaponVisuals.lua",
         "scripts/RoStreet/module/Reload.lua",
         "scripts/RoStreet/module/SilentAim.lua",
         "scripts/RoStreet/module/KickTarget.lua",
