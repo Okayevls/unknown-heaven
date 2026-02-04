@@ -61,7 +61,7 @@ return {
     },
 
     OnEnable = function(ctx)
-        if ctx:GetSetting("Name Mode") == "Step" then
+        if ctx:GetSetting("Mode") == "Step" then
             table.insert(_connections, RunService.Heartbeat:Connect(function()
                 if LocalPlayer.Character then
                     local currentTime = tick()
@@ -102,7 +102,7 @@ return {
     end,
 
     OnDisable = function(ctx)
-        if ctx:GetSetting("Name Mode") == "Step" then
+        if ctx:GetSetting("Mode") == "Step" then
             for _, conn in ipairs(_connections) do
                 conn:Disconnect()
             end
