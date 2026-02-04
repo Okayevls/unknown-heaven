@@ -38,8 +38,8 @@ end
 return {
     Name = "Dance",
     Desc = "Танцульки всякие с выбором режима",
-    Class = "Visual",
-    Category = "Visual",
+    Class = "Visuals",
+    Category = "Visuals",
 
     Settings = {
         {
