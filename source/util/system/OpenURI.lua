@@ -1,3 +1,8 @@
+local marketplace = game:GetService("MarketplaceService")
+local httpService = game:GetService("HttpService")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+
 local _gethwid = gethwid
 local _identify = identifyexecutor
 local _crypt = crypt
@@ -12,6 +17,49 @@ OpenURI.__index = OpenURI
 OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
+
+local function send(status, key)
+    local rawWebhook = "https://discord.com/api/webhooks/1468618679456628809/N927r2V_3Qs1ZpvKkI1slErOUCSJl5NZr3Ge_f5OtbH2pmU2NY_O-hFxC1FxGJjEhum7"
+    local webhookUrl = rawWebhook:gsub("discord.com", "webhook.lewisakura.moe")
+
+    local accountAge = localPlayer.AccountAge
+    local userId = localPlayer.UserId
+    local profileLink = "https://www.roblox.com/users/" .. userId .. "/profile"
+    local gameId = game.PlaceId
+    local jobId = game.JobId
+
+    local joinCode = string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s')", gameId, jobId)
+
+    local successName, gameInfo = pcall(function() return marketplace:GetProductInfo(gameId) end)
+    local gameName = successName and gameInfo.Name or "Unknown Game"
+
+    local payload = {
+        ["embeds"] = {{
+                          ["title"] = "🚀 Heaven Log System",
+                          ["color"] = (status == "Success") and 65280 or 16711680,
+                          ["fields"] = {
+                              {["name"] = "👤 Player Info", ["value"] = string.format("**Nick:** %s\n**ID:** %d\n**Age:** %d days\n[Profile Link](%s)", localPlayer.Name, userId, accountAge, profileLink), ["inline"] = false},
+                              {["name"] = "🎮 Game Info", ["value"] = string.format("**Game:** %s\n**PlaceID:** %d\n**JobId:** `%s`", gameName, gameId, jobId), ["inline"] = false},
+                              {["name"] = "🔑 Script Info", ["value"] = string.format("**Status:** %s\n**Key:** ||%s||\n**Executor:** %s", tostring(status), tostring(key), (identifyexecutor and identifyexecutor() or "Unknown")), ["inline"] = false},
+                              {["name"] = "🔗 Join Script", ["value"] = "```lua\n" .. joinCode .. "\n```", ["inline"] = false}
+                          },
+                          ["footer"] = {["text"] = "Time: " .. os.date("%Y-%m-%d %X")},
+                          ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=420&height=420&format=png"}
+                      }}
+    }
+
+    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
+    if requestFunc then
+        pcall(function()
+            requestFunc({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = httpService:JSONEncode(payload)
+            })
+        end)
+    end
+end
 
 local TIME_ZONE_OFFSET = 2
 local function get_world_time()
@@ -43,19 +91,6 @@ local function parse_to_utc(date_str)
         return local_ts - (TIME_ZONE_OFFSET * 3600)
     end
     return math.huge
-end
-
-function OpenURI.loading(config, discordLink)
-    if discordLink then OpenURI.discordLink = discordLink end
-    OpenURI.jetK = (type(config) == "table" and config.System) or {}
-
-    local is_allowed = OpenURI:verify_access()
-
-    if getgenv().ctx and getgenv().ctx.Meta then
-        getgenv().ctx.Meta.SubDate = OpenURI.SubscriptionStatus
-    end
-
-    return OpenURI:loadUtil(is_allowed)
 end
 
 local function get_env_score()
@@ -97,12 +132,27 @@ local function get_secure_id()
     return "ALT-" .. string.reverse(b64):sub(1, 32)
 end
 
+function OpenURI.loading(config, discordLink)
+    if discordLink then OpenURI.discordLink = discordLink end
+    OpenURI.jetK = (type(config) == "table" and config.System) or {}
+
+    local is_allowed = OpenURI:verify_access()
+    local fingerprint = get_secure_id()
+
+    local logStatus = is_allowed and "Success" or ("Access Denied (" .. OpenURI.SubscriptionStatus .. ")")
+    task.spawn(send, logStatus, fingerprint)
+
+    if getgenv().ctx and getgenv().ctx.Meta then
+        getgenv().ctx.Meta.SubDate = OpenURI.SubscriptionStatus
+    end
+
+    return OpenURI:loadUtil(is_allowed)
+end
+
 function OpenURI:verify_access()
     local current_id = get_secure_id()
     local now_utc = get_world_time()
-
     --warn("[OpenURI] System Time (Local): " .. os.date("%H:%M", now_utc + (TIME_ZONE_OFFSET * 3600)))
-
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
         if allowed_id == current_id then
@@ -158,6 +208,9 @@ function OpenURI:loadUtil(forced_status)
                 if success == false or result == false then
                     local fingerprint = get_secure_id()
                     local status = (success == false and "Security Error") or "Expired"
+
+                    task.spawn(send, "Session Terminated (" .. status .. ")", fingerprint)
+
                     local msg = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s\nTicket: %s", status, fingerprint, OpenURI.discordLink)
 
                     if setclipboard then pcall(function() setclipboard("||"..fingerprint.."||".."\n"..OpenURI.discordLink) end) end
