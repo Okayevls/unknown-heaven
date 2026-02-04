@@ -4,6 +4,7 @@ return {
     },
 
     Modules = {
+        "scripts/RoStreet/module/Esp.lua",
     },
 
     System = {
