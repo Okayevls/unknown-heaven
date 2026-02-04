@@ -43,7 +43,16 @@ local moduleMgr = (getgenv().ctx and getgenv().ctx.moduleMgr) or ModuleManager.n
 
 local listPath = string.format("scripts/%s/Modules.lua", project)
 local moduleRegistryList = inject:Load(listPath)
-local reg = ModuleRegistryManager.new(moduleRegistryList)
+
+local meta = {}
+local moduleList = moduleRegistryList
+
+if type(moduleRegistryList) == "table" and moduleRegistryList.Modules then
+    meta = moduleRegistryList.Meta or {}
+    moduleList = moduleRegistryList.Modules
+end
+
+local reg = ModuleRegistryManager.new(moduleList)
 
 log:Info("Registering modules...")
 
@@ -60,7 +69,8 @@ log:Info("Successfully registered all modules.")
 getgenv().ctx = {
     Inject = inject,
     moduleMgr = moduleMgr,
-    DebugMode = true
+    DebugMode = true,
+    Meta = meta,
 }
 
 log:Info("Launching UI...")

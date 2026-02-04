@@ -141,9 +141,11 @@ if not table.find(TAB_ORDER, "Theme") then
     table.insert(TAB_ORDER, "Theme")
 end
 
+local meta = ctx.Meta or {}
+
 local State = {
     Theme = {Accent = Theme.Accent},
-    LastUpdate = "03.02.2026",
+    LastUpdate = meta.LastUpdate or "unknown",
     User = {
         Email = "comingsoon@gmail.com",
         SubDate = "01.01.2027",
