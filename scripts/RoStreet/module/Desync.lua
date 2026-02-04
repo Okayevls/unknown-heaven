@@ -74,6 +74,7 @@ return {
         { Type = "Slider", Name = "MaxY", Default = 1000000, Min = 35000, Max = 1000000, Step = 5000 },
         { Type = "Slider", Name = "MinY", Default = 30000, Min = 5000, Max = 30000, Step = 5000 },
         { Type = "Boolean", Name = "Calculate Ground", Default = false },
+        { Type = "Slider", Name = "TickYBack", Default = 10, Min = 1, Max = 1000, Step = 2 },
     },
 
     OnEnable = function(ctx)
@@ -111,7 +112,7 @@ return {
 
                         rootPart.CFrame = desync.old_position
 
-                        if rootPart.Position.Y > 3000 then
+                        if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
                             local ground = backGroundY
                             rootPart.CFrame = CFrame.new(rootPart.Position.X, ground, rootPart.Position.Z)
                             desync.teleportPosition = Vector3.new(rootPart.Position.X, ground, rootPart.Position.Z)
