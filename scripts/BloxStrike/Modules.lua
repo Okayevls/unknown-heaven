@@ -4,7 +4,7 @@ return {
     },
 
     Modules = {
-        "scripts/RoStreet/module/Esp.lua",
+        "scripts/BloxStrike/module/Esp.lua",
     },
 
     System = {
