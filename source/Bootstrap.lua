@@ -42,7 +42,19 @@ local listPath = string.format("scripts/%s/Modules.lua", project)
 local moduleRegistryList = inject:Load(listPath)
 
 log:Info("Loading addition wait please...")
+
+local meta = {}
+if type(moduleRegistryList) == "table" then
+    meta = moduleRegistryList.Meta or {}
+end
+
 local OpenURI = inject:Load("source/util/system/OpenURI.lua")
+
+getgenv().ctx = {
+    Inject = inject,
+    Meta = meta,
+}
+
 OpenURI.loading(moduleRegistryList, discordLink)
 
 local system = {}
@@ -57,10 +69,8 @@ local ModuleManager = inject:Load("source/util/module/ModuleManager.lua")
 local ModuleRegistryManager = inject:Load("source/util/module/ModuleRegistryManager.lua")
 local moduleMgr = (getgenv().ctx and getgenv().ctx.moduleMgr) or ModuleManager.new()
 
-local meta = {}
 local moduleList = moduleRegistryList
 if type(moduleRegistryList) == "table" and moduleRegistryList.Modules then
-    system = moduleRegistryList.System or {}
     moduleList = moduleRegistryList.Modules
 end
 
@@ -78,12 +88,8 @@ moduleMgr:RegisterFromList(listByCategory)
 
 log:Info("Successfully registered all modules.")
 
-getgenv().ctx = {
-    Inject = inject,
-    moduleMgr = moduleMgr,
-    DebugMode = true,
-    Meta = meta,
-}
+getgenv().ctx.moduleMgr = moduleMgr
+getgenv().ctx.DebugMode = true
 
 log:Info("Launching UI...")
 local guiSuccess, guiErr = pcall(function()

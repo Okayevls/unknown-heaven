@@ -39,7 +39,7 @@ function OpenURI.loading(config, discordLink)
 
     local allowed = OpenURI:verify_access()
 
-    if allowed and _ctx then
+    if allowed and _ctx and _ctx.Meta then
         _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
     end
 
