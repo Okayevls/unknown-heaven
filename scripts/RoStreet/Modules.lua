@@ -15,6 +15,7 @@ return {
         "scripts/RoStreet/module/FastReload.lua",
         "scripts/RoStreet/module/ReloadNoSlow.lua",
         "scripts/RoStreet/module/KickTarget.lua",
+        "scripts/RoStreet/module/Desync.lua",
     },
 
     System = {
