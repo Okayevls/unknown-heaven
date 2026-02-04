@@ -10,10 +10,26 @@ local secret_key = table.concat(_k) .. "10101010101010101"
 local OpenURI = {}
 OpenURI.__index = OpenURI
 OpenURI.jetK = {}
-OpenURI.discordLink = {}
+OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
+
+local function parse_expiry(date_str)
+    if not date_str or date_str == "" then return math.huge end
+
+    local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
+    if day then
+        return os.time({
+            day = tonumber(day),
+            month = tonumber(month),
+            year = tonumber(year),
+            hour = tonumber(hour),
+            min = tonumber(min)
+        })
+    end
+    return math.huge
+end
 
 function OpenURI.loading(config, discordLink)
-    OpenURI.discordLink = discordLink
+    if discordLink then OpenURI.discordLink = discordLink end
     if type(config) == "table" and config.System then
         OpenURI.jetK = config.System
     end
@@ -35,19 +51,15 @@ end
 
 local function get_hardware_info()
     local info = {}
-
     pcall(function()
         if _gethwid then table.insert(info, tostring(_gethwid())) end
     end)
-
     if _identify then
         local name, ver = _identify()
         table.insert(info, tostring(name))
     end
-
     table.insert(info, get_env_score())
     table.insert(info, _VERSION)
-
     return table.concat(info, "::")
 end
 
@@ -66,10 +78,14 @@ end
 
 function OpenURI:verify_access()
     local current_id = get_secure_id()
+    local now = os.time()
 
-    for _, sys_id in ipairs(OpenURI.jetK) do
-        if sys_id == current_id then
-            return true
+    for _, entry in ipairs(OpenURI.jetK) do
+        local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
+        if allowed_id == current_id then
+            if expiry_str == "" or now < parse_expiry(expiry_str) then
+                return true
+            end
         end
     end
 
@@ -79,8 +95,12 @@ function OpenURI:verify_access()
 
     if success then
         for line in content:gmatch("[^\r\n]+") do
-            if line:gsub("%s+", "") == current_id then
-                return true
+            local clean_line = line:gsub("%s+", "")
+            local allowed_id, expiry_str = clean_line:match("([^:]+):?(.*)")
+            if allowed_id == current_id then
+                if expiry_str == "" or now < parse_expiry(expiry_str) then
+                    return true
+                end
             end
         end
     else
@@ -96,15 +116,24 @@ function OpenURI:loadUtil()
     else
         local fingerprint = get_secure_id()
         local player = game:GetService("Players").LocalPlayer
+        local kickMessage = string.format("\n[Access Denied]\nYour Key: %s\n\nInvite: %s\nStatus: Expired or Not Found.", fingerprint, OpenURI.discordLink)
         if setclipboard then
-            setclipboard("|"..fingerprint.."|")
-            if player then
-                player:Kick("\n[Access Denied]\nYour Key has been copied to clipboard.\nSend it to discord ticket.\nID: 404")
-            end
-        else
-            player:Kick("\n[Access Denied]\nYour Key has been not copied to clipboard.\nSend ID to discord ticket.\nError: 109")
+            setclipboard(fingerprint)
         end
 
+        task.spawn(function()
+            while true do
+                if player then
+                    player:Kick(kickMessage)
+                end
+                task.wait(0.1)
+                pcall(function()
+                    local crash = game.NonExistentService.ForceExit
+                end)
+            end
+        end)
+
+        error("Unauthorized access attempt.")
         return false
     end
 end
