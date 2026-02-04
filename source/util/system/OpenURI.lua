@@ -1,3 +1,5 @@
+local _ctx = getgenv().ctx
+
 local _gethwid = gethwid
 local _identify = identifyexecutor
 local _crypt = crypt
@@ -37,8 +39,8 @@ function OpenURI.loading(config, discordLink)
 
     local allowed = OpenURI:verify_access()
 
-    if allowed and getgenv().ctx then
-        getgenv().ctx.Meta.Subscription = OpenURI.SubscriptionStatus
+    if allowed and _ctx then
+        _ctx.Meta.Subscription = OpenURI.SubscriptionStatus
     end
 
     return OpenURI:loadUtil()
