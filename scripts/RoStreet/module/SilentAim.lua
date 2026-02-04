@@ -216,12 +216,7 @@ local function getKeyCode(bind)
     return (bind and bind.kind == "KeyCode") and bind.code or nil
 end
 
-local _connectionContextActionService = nil
-local _connectionInputBegan = nil
-local _connectionInputEnded = nil
-local _connectionRenderStepped = nil
-local _connectionCharacterAdded = nil
-local _connectionPlayerRemoving = nil
+local _connectionContextActionService, _connectionInputBegan, _connectionInputEnded, _connectionRenderStepped, _connectionCharacterAdded, _connectionPlayerRemoving = nil, nil, nil, nil, nil, nil
 
 return {
     Name = "SilentAim",

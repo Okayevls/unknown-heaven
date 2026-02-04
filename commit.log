@@ -1,2 +1,3 @@
-[main 6abcc38] Auto-commit 05.02.2026  1:06:51,27
- 2 files changed, 44 insertions(+), 20 deletions(-)
+[main 37983a5] Auto-commit 05.02.2026  1:32:15,47
+ 3 files changed, 2 insertions(+), 95 deletions(-)
+ delete mode 100644 scripts/RoStreet/module/WeaponVisuals.lua
