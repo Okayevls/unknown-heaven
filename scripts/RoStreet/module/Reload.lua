@@ -2,6 +2,7 @@ local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local settingsConnection = nil
+local RunService = game:GetService("RunService")
 local RS = game:GetService("ReplicatedStorage")
 local _connectionRenderStepped = nil
 
