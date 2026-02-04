@@ -929,30 +929,14 @@ local function renderSettings(tab, moduleName)
     if not st then return end
 
     for _, sDef in ipairs(st.Definition.Settings) do
-        local visible = true
-        if sDef.Dependency then
-            local depValue = moduleMgr:GetSetting(tab, moduleName, sDef.Dependency)
-            if depValue == false then
-                visible = false
-            end
-        end
-
-        if visible then
-            if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "BindSetting" then addBindSettingRow(tab, moduleName, sDef)
-            elseif sDef.Type == "String" then addStringSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "ModeSetting" then addModeSetting(tab, moduleName, sDef)
-            end
+        if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "BindSetting" then addBindSettingRow(tab, moduleName, sDef)
+        elseif sDef.Type == "String" then addStringSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "ModeSetting" then addModeSetting(tab, moduleName, sDef)
         end
     end
-
-    trackConn(moduleMgr.Changed:Connect(function(payload)
-        if payload.moduleName == moduleName and payload.kind == "Setting" then
-            renderSettings(tab, moduleName)
-        end
-    end))
 end
 
 local UIToggles = {}
