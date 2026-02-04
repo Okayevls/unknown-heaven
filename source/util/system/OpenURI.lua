@@ -42,8 +42,12 @@ local function parse_expiry(date_str)
     local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
     if day then
         return os.time({
-            day = tonumber(day), month = tonumber(month), year = tonumber(year),
-            hour = tonumber(hour), min = tonumber(min), sec = 0
+            day = tonumber(day),
+            month = tonumber(month),
+            year = tonumber(year),
+            hour = tonumber(hour),
+            min = tonumber(min),
+            sec = 0
         })
     end
     return math.huge
@@ -123,11 +127,14 @@ function OpenURI:verify_access()
             end
 
             local exp_ts = parse_expiry(expiry_str)
+            print(string.format("[DEBUG] Now: %d | Expiry: %d", now, exp_ts))
+
             if now < exp_ts then
                 OpenURI.SubscriptionStatus = expiry_str
                 return true
             else
                 OpenURI.SubscriptionStatus = "Expired"
+                warn("[OpenURI] Blocked: Time is up!")
                 return false
             end
         end
