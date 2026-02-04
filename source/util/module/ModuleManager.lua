@@ -5,8 +5,8 @@ export type Bind =
         | { kind: "UserInputType", code: Enum.UserInputType }
 
 export type SettingDef =
-    { Type: "Boolean", Name: string, Default: boolean? }
-    | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
+    { Type: "Boolean", Name: string, Default: boolean?, Dependency: string? }
+    | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number?, Dependency: string? }
     | { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
     | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
     | { Type: "BindSetting", Name: string, Default: Bind? }
