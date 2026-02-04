@@ -29,12 +29,6 @@ local function updateWeaponRotation(ctx)
         _rotationConnection = nil
     end
 
-    if not ctx:GetSetting("Spin Weapon") then
-        local weapon = getEquippedWeapon()
-        if weapon then weapon.Grip = CFrame.new(0, 0, 0) end
-        return
-    end
-
     _rotationConnection = RunService.RenderStepped:Connect(function(dt)
         local weapon = getEquippedWeapon()
         if weapon and weapon:FindFirstChild("Handle") then
