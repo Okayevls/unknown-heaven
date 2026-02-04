@@ -38,11 +38,11 @@ function OpenURI.loading(config, discordLink)
     local allowed = OpenURI:verify_access()
     local _ctx = getgenv().ctx
 
-    if allowed and _ctx and _ctx.Meta then
+    if _ctx and _ctx.Meta then
         _ctx.Meta.SubDate = OpenURI.SubscriptionStatus
     end
 
-    return OpenURI:loadUtil()
+    return OpenURI:loadUtil(allowed)
 end
 
 local function get_env_score()
@@ -95,6 +95,9 @@ function OpenURI:verify_access()
             if now < exp_ts then
                 OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
                 return true
+            else
+                OpenURI.SubscriptionStatus = "Expired"
+                return false
             end
         end
     end
@@ -109,30 +112,48 @@ function OpenURI:verify_access()
                 if now < exp_ts then
                     OpenURI.SubscriptionStatus = (expiry_str ~= "" and expiry_str) or "Infinite"
                     return true
+                else
+                    OpenURI.SubscriptionStatus = "Expired"
+                    return false
                 end
             end
         end
     end
 
+    OpenURI.SubscriptionStatus = "Not Whitelisted"
     return false
 end
 
-function OpenURI:loadUtil()
-    if self:verify_access() then
+function OpenURI:loadUtil(forced_status)
+    local is_allowed = (forced_status ~= nil) and forced_status or self:verify_access()
+
+    if is_allowed then
+        warn("[Heaven] Access Granted. Time: " .. OpenURI.SubscriptionStatus)
         return true
     else
         local fingerprint = get_secure_id()
         local player = game:GetService("Players").LocalPlayer
-        local kickMessage = string.format("\n[Access Denied]\nYour Key: %s\n\nInvite: %s\nStatus: Expired or Not Found.", fingerprint, OpenURI.discordLink)
+
+        local status_info = OpenURI.SubscriptionStatus or "Access Denied"
+        local kickMessage = string.format(
+                "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nInvite: %s\n\nID has been copied to clipboard.",
+                status_info, fingerprint, OpenURI.discordLink
+        )
+
         if setclipboard then setclipboard(fingerprint) end
-
-        while true do
-            if player then player:Kick(kickMessage) end
-            task.wait(0.2)
-            pcall(function() local _ = game.NonExistentService.Exit end)
-        end
-
-        error("Unauthorized access attempt.")
+        task.spawn(function()
+            while true do
+                if player then
+                    player:Kick(kickMessage)
+                end
+                task.wait(0.1)
+                pcall(function()
+                    local crash = game:GetService("NonExistentService")
+                    crash:Destroy()
+                end)
+            end
+        end)
+        error("Access Denied: " .. status_info)
         return false
     end
 end
