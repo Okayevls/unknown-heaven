@@ -13,6 +13,8 @@ OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
+local UTC_OFFSET = 2
+
 local function get_world_time()
     local success, result = pcall(function()
         local response = game:HttpGet("https://google.com", true)
@@ -21,15 +23,16 @@ local function get_world_time()
             local day, month_str, year, hour, min, sec = date_str:match("%a+, (%d+) (%a+) (%d+) (%d+):(%d+):(%d+)")
             local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
 
-            return os.time({
+            local utc_timestamp = os.time({
                 day=tonumber(day), month=months[month_str], year=tonumber(year),
                 hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
             })
+            return utc_timestamp + (UTC_OFFSET * 3600)
         end
     end)
 
-    local finalTime = success and result or os.time(os.date("!*t"))
-    warn("[OpenURI] World Time (UTC): " .. os.date("!%d.%m.%Y-%H:%M", finalTime))
+    local finalTime = success and result or (os.time())
+    warn("[OpenURI] Adjusted Network Time: " .. os.date("%d.%m.%Y-%H:%M", finalTime))
     return finalTime
 end
 
@@ -37,7 +40,7 @@ local function parse_expiry(date_str)
     if not date_str or date_str == "" then return math.huge end
     local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
     if day then
-        local t = os.time({
+        return os.time({
             day = tonumber(day),
             month = tonumber(month),
             year = tonumber(year),
@@ -45,12 +48,6 @@ local function parse_expiry(date_str)
             min = tonumber(min),
             sec = 0
         })
-
-        local local_now = os.time()
-        local utc_now = os.time(os.date("!*t", local_now))
-        local diff = os.difftime(local_now, utc_now)
-
-        return t - diff
     end
     return math.huge
 end
@@ -129,14 +126,11 @@ function OpenURI:verify_access()
             end
 
             local exp_ts = parse_expiry(expiry_str)
-            print(string.format("[DEBUG] Now: %d | Expiry: %d", now, exp_ts))
-
             if now < exp_ts then
                 OpenURI.SubscriptionStatus = expiry_str
                 return true
             else
                 OpenURI.SubscriptionStatus = "Expired"
-                warn("[OpenURI] Blocked: Time is up!")
                 return false
             end
         end
@@ -187,7 +181,7 @@ function OpenURI:loadUtil(forced_status)
         end
     end)
 
-    error("!! ACCESS DENIED !! Status: " .. OpenURI.SubscriptionStatus)
+    error("!! ACCESS DENIED !!")
     return false
 end
 
