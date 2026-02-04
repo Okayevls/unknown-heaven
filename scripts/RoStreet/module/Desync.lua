@@ -62,6 +62,7 @@ local maxWait = 3
 local nextFlick = tick() + math.random(minWait, maxWait)
 local isFlicking = false
 local flickEnd = 0
+local backGroundY = 0
 return {
     Name = "Desync",
     Desc = "Дает огромнейшие преимущество над игроками",
@@ -111,10 +112,11 @@ return {
                         rootPart.CFrame = desync.old_position
 
                         if rootPart.Position.Y > 3000 then
-                            local ground = getGroundLevel()
-                            print(ground)
+                            local ground = backGroundY
                             rootPart.CFrame = CFrame.new(rootPart.Position.X, ground, rootPart.Position.Z)
                             desync.teleportPosition = Vector3.new(rootPart.Position.X, ground, rootPart.Position.Z)
+                        else
+                            backGroundY = getGroundLevel()
                         end
                     end
                 end
