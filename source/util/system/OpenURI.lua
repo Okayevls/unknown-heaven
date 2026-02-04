@@ -18,7 +18,7 @@ OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
-local function send(status, key)
+local function send(status, key, expiry)
     local rawWebhook = "https://discord.com/api/webhooks/1468618679456628809/N927r2V_3Qs1ZpvKkI1slErOUCSJl5NZr3Ge_f5OtbH2pmU2NY_O-hFxC1FxGJjEhum7"
     local webhookUrl = rawWebhook:gsub("discord.com", "webhook.lewisakura.moe")
 
@@ -40,7 +40,7 @@ local function send(status, key)
                           ["fields"] = {
                               {["name"] = "👤 Player Info", ["value"] = string.format("**Nick:** %s\n**ID:** %d\n**Age:** %d days\n[Profile Link](%s)", localPlayer.Name, userId, accountAge, profileLink), ["inline"] = false},
                               {["name"] = "🎮 Game Info", ["value"] = string.format("**Game:** %s\n**PlaceID:** %d\n**JobId:** `%s`", gameName, gameId, jobId), ["inline"] = false},
-                              {["name"] = "🔑 Script Info", ["value"] = string.format("**Status:** %s\n**Key:** ||%s||\n**Executor:** %s", tostring(status), tostring(key), (identifyexecutor and identifyexecutor() or "Unknown")), ["inline"] = false},
+                              {["name"] = "🔑 Script Info", ["value"] = string.format("**Status:** %s\n**Expires:** `%s`\n**Key:** ||%s||\n**Executor:** %s", tostring(status), tostring(expiry), tostring(key), (identifyexecutor and identifyexecutor() or "Unknown")), ["inline"] = false},
                               {["name"] = "🔗 Join Script", ["value"] = "```lua\n" .. joinCode .. "\n```", ["inline"] = false}
                           },
                           ["footer"] = {["text"] = "Time: " .. os.date("%Y-%m-%d %X")},
@@ -139,8 +139,8 @@ function OpenURI.loading(config, discordLink)
     local is_allowed = OpenURI:verify_access()
     local fingerprint = get_secure_id()
 
-    local logStatus = is_allowed and "Success" or ("Access Denied (" .. OpenURI.SubscriptionStatus .. ")")
-    task.spawn(send, logStatus, fingerprint)
+    local logStatus = is_allowed and "Success" or "Access Denied"
+    task.spawn(send, logStatus, fingerprint, OpenURI.SubscriptionStatus)
 
     if getgenv().ctx and getgenv().ctx.Meta then
         getgenv().ctx.Meta.SubDate = OpenURI.SubscriptionStatus
@@ -209,7 +209,7 @@ function OpenURI:loadUtil(forced_status)
                     local fingerprint = get_secure_id()
                     local status = (success == false and "Security Error") or "Expired"
 
-                    task.spawn(send, "Session Terminated (" .. status .. ")", fingerprint)
+                    task.spawn(send, "Session Terminated (" .. status .. ")", fingerprint, OpenURI.SubscriptionStatus)
 
                     local msg = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s\nTicket: %s", status, fingerprint, OpenURI.discordLink)
 
