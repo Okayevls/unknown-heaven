@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local settingsConnection = nil
 local RS = game:GetService("ReplicatedStorage")
+local _connectionRenderStepped = nil
 
 local _originalWeaponSettings = {}
 local _originalGCConfigs = {}
@@ -61,13 +62,17 @@ return {
         local settingsPath = RS:FindFirstChild("Settings", true)
         local function toggleReloadBind()
             if ctx:GetSetting("Auto Reload") then
-                local weapon = getEquippedWeapon()
-                if weapon then
-                    local ammo = weapon:FindFirstChild("Ammo")
-                    if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
-                        weapon.Reload:InvokeServer()
+                _connectionRenderStepped = RunService.RenderStepped:Connect(function()
+                    local weapon = getEquippedWeapon()
+                    if weapon then
+                        local ammo = weapon:FindFirstChild("Ammo")
+                        if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
+                            weapon.Reload:InvokeServer()
+                        end
                     end
-                end
+                end)
+            else
+                if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
             end
 
             if ctx:GetSetting("Fast Reload") then
@@ -121,6 +126,29 @@ return {
                         end
                     end
                 end
+            else
+                for data, original in pairs(_originalWeaponSettings) do
+                    if type(data) == "table" then
+                        data.Automatic = original.Automatic
+                        data.ReloadTime = original.ReloadTime
+                    end
+                end
+                safeClear(_originalWeaponSettings)
+
+                for cfg, original in pairs(_originalGCConfigs) do
+                    if type(cfg) == "table" then
+                        cfg.Automatic = original.Automatic
+                        cfg.ReloadTime = original.ReloadTime
+                    end
+                end
+                safeClear(_originalGCConfigs)
+
+                for tbl, originalFunc in pairs(_originalReloadFuncs) do
+                    if type(tbl) == "table" and type(originalFunc) == "function" then
+                        tbl.PlayReloadAnim = originalFunc
+                    end
+                end
+                safeClear(_originalReloadFuncs)
             end
 
             if ctx:GetSetting("No Slow Reload") then
@@ -141,6 +169,7 @@ return {
     end,
 
     OnDisable = function(ctx)
+        if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
         ContextActionService:UnbindAction("BlockReload")
 
         if settingsConnection then
