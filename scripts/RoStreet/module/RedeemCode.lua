@@ -3,13 +3,9 @@ local RunService = game:GetService("RunService")
 local RedeemRemote = nil
 local isFunction = false
 local connectionRenderStepped = nil
+local running = false
 
-local CODES = {
-    "HAPPYNEWYEAR2026",
-    "25MVISITS",
-    "25KLIKES",
-    "StarCity"
-}
+local CODES = { "HAPPYNEWYEAR2026", "25MVISITS", "25KLIKES", "StarCity" }
 
 local redeemed = {}
 for _, code in ipairs(CODES) do
@@ -58,26 +54,52 @@ return {
     Settings = {},
 
     OnEnable = function(ctx)
+        if running then return end
+        running = true
+
+        if connectionRenderStepped then
+            connectionRenderStepped:Disconnect()
+            connectionRenderStepped = nil
+        end
+
         connectionRenderStepped = RunService.RenderStepped:Connect(function()
-            if not RedeemRemote then
+            if connectionRenderStepped then
+                connectionRenderStepped:Disconnect()
+                connectionRenderStepped = nil
+            end
+
+            task.spawn(function()
                 if not findRemote() then
                     warn("Remote not found!")
+                    running = false
                     ctx:SetEnabled(false)
                     return
                 end
-            end
 
-            for _, code in ipairs(CODES) do
-                redeem(code)
-                print(code)
-                wait(1)
-            end
+                for _, code in ipairs(CODES) do
+                    if not running then break end
 
-            ctx:SetEnabled(false)
+                    local ok = redeem(code)
+                    if ok then
+                        print("Redeemed:", code)
+                    else
+                        warn("Failed:", code)
+                    end
+
+                    task.wait(1)
+                end
+
+                running = false
+                ctx:SetEnabled(false)
+            end)
         end)
     end,
 
     OnDisable = function(ctx)
-
+        running = false
+        if connectionRenderStepped then
+            connectionRenderStepped:Disconnect()
+            connectionRenderStepped = nil
+        end
     end,
 }
