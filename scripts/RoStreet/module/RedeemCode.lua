@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local RedeemRemote = nil
 local isFunction = false
+local connectionRenderStepped = nil
 
 local CODES = {
     "HAPPYNEWYEAR2026",
@@ -56,11 +58,11 @@ return {
     Settings = {},
 
     OnEnable = function(ctx)
-        task.spawn(function()
+        connectionRenderStepped = RunService.RenderStepped:Connect(function()
             if not RedeemRemote then
                 if not findRemote() then
                     warn("Remote not found!")
-                    ctx.moduleMgr:SetEnabled(ctx.Category, ctx.Name, false)
+                    ctx:SetEnabled(false)
                     return
                 end
             end
@@ -68,10 +70,10 @@ return {
             for _, code in ipairs(CODES) do
                 redeem(code)
                 print(code)
-                task.wait(1)
+                wait(1)
             end
 
-            ctx.moduleMgr:SetEnabled(ctx.Category, ctx.Name, false)
+            ctx:SetEnabled(false)
         end)
     end,
 

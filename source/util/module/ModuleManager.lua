@@ -3,46 +3,48 @@ export type Bind =
         | { kind: "UserInputType", code: Enum.UserInputType }
 
 export type SettingDef =
-{ Type: "Boolean", Name: string, Default: boolean? }
-| { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
-| { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
-| { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
-| { Type: "BindSetting", Name: string, Default: Bind? }
-| { Type: "String", Name: string, Default: string? }
+    { Type: "Boolean", Name: string, Default: boolean? }
+    | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
+    | { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
+    | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
+    | { Type: "BindSetting", Name: string, Default: Bind? }
+    | { Type: "String", Name: string, Default: string? }
 
 export type ModuleCtx = {
-Category: string,
-Name: string,
-Class: string?,
+   Category: string,
+   Name: string,
+   Class: string?,
 
-GetSetting: (self: ModuleCtx, settingName: string) -> any,
-SetSetting: (self: ModuleCtx, settingName: string, value: any) -> (),
-GetSettingData: (self: ModuleCtx, settingName: string) -> SettingDef?,
+   GetSetting: (self: ModuleCtx, settingName: string) -> any,
+   SetSetting: (self: ModuleCtx, settingName: string, value: any) -> (),
+   GetSettingData: (self: ModuleCtx, settingName: string) -> SettingDef?,
+
+   SetEnabled: (self: ModuleCtx, enabled: boolean) -> (),
 }
 
 export type ModuleDef = {
-Name: string,
-Desc: string?,
-Class: string?,
-Settings: { SettingDef },
+   Name: string,
+   Desc: string?,
+   Class: string?,
+   Settings: { SettingDef },
 
-OnEnable: ((ctx: ModuleCtx) -> ())?,
-OnDisable: ((ctx: ModuleCtx) -> ())?,
+   OnEnable: ((ctx: ModuleCtx) -> ())?,
+   OnDisable: ((ctx: ModuleCtx) -> ())?,
 }
 
 export type ModuleState = {
-Enabled: boolean,
-Bind: Bind?,
-Settings: { [string]: any },
-Definition: ModuleDef,
+   Enabled: boolean,
+   Bind: Bind?,
+   Settings: { [string]: any },
+   Definition: ModuleDef,
 }
 
 export type ChangedPayload = {
-kind: "Enabled" | "Bind" | "Setting" | "Register" | "Reset",
-category: string,
-moduleName: string,
-key: string?,
-value: any,
+   kind: "Enabled" | "Bind" | "Setting" | "Register" | "Reset",
+   category: string,
+   moduleName: string,
+   key: string?,
+   value: any,
 }
 
 type CategoryMap = { [string]: { [string]: ModuleState } }
@@ -209,29 +211,32 @@ Name = moduleName,
 Class = if st then st.Definition.Class else nil,
 
 GetSetting = function(self: ModuleCtx, settingName: string)
-return mgr:GetSetting(categoryName, moduleName, settingName)
+    return mgr:GetSetting(categoryName, moduleName, settingName)
 end,
 
 SetSetting = function(self: ModuleCtx, settingName: string, value: any)
-mgr:SetSetting(categoryName, moduleName, settingName, value)
+    mgr:SetSetting(categoryName, moduleName, settingName, value)
+end,
+
+SetEnabled = function(self, enabled: boolean)
+    mgr:SetEnabled(categoryName, moduleName, enabled)
 end,
 
 GetSettingData = function(self: ModuleCtx, settingName: string): SettingDef?
-local state = mgr:GetState(categoryName, moduleName)
-local settings = if state then state.Definition.Settings else nil
+   local state = mgr:GetState(categoryName, moduleName)
+   local settings = if state then state.Definition.Settings else nil
 
-if settings then
-for _, sDef in ipairs(settings) do
-if sDef.Name == settingName then
-return sDef
-end
-end
-end
-return nil
-end,
-}
-
-return ctx
+       if settings then
+          for _, sDef in ipairs(settings) do
+              if sDef.Name == settingName then
+                  return sDef
+              end
+          end
+       end
+       return nil
+   end,
+   }
+   return ctx
 end
 
 -- ========= registration =========

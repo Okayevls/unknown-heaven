@@ -41,7 +41,7 @@ return {
 
         if not checkCarrying() then
             rootLocal.CFrame = CFrame.new(Vector3.new(rootLocal.Position.X, originalPos, rootLocal.Position.Z))
-            ctx.moduleMgr:SetEnabled(ctx.Category, ctx.Name, false)
+            ctx:SetEnabled(false)
         end
     end,
 
