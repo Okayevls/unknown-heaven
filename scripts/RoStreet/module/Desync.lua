@@ -111,7 +111,7 @@ return {
                         rootPart.CFrame = desync.old_position
 
                         if rootPart.CFrame.y > 3000 then
-                            rootPart.CFrame.y = getGroundLevel()
+                            rootPart.Position.y = getGroundLevel()
                             desync.teleportPosition.y = getGroundLevel()
                         end
                     end
