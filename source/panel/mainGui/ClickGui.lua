@@ -148,7 +148,7 @@ local State = {
     LastUpdate = meta.LastUpdate or "unknown",
     User = {
         Email = "comingsoon@gmail.com",
-        SubDate = "01.01.2027",
+        SubDate = meta.SubDate or "unknown",
         Role = "Beta",
     }
 }

@@ -11,6 +11,7 @@ local OpenURI = {}
 OpenURI.__index = OpenURI
 OpenURI.jetK = {}
 OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
+OpenURI.SubscriptionStatus = "None"
 
 local function parse_expiry(date_str)
     if not date_str or date_str == "" then return math.huge end
@@ -32,6 +33,12 @@ function OpenURI.loading(config, discordLink)
     if discordLink then OpenURI.discordLink = discordLink end
     if type(config) == "table" and config.System then
         OpenURI.jetK = config.System
+    end
+
+    local allowed = OpenURI:verify_access()
+
+    if allowed and getgenv().ctx then
+        getgenv().ctx.Meta.Subscription = OpenURI.SubscriptionStatus
     end
 
     return OpenURI:loadUtil()
@@ -108,6 +115,21 @@ function OpenURI:verify_access()
     end
 
     return false
+end
+
+local function format_time_left(seconds)
+    if seconds == math.huge then return "Lifetime" end
+    if seconds <= 0 then return "Expired" end
+
+    local days = math.floor(seconds / 86400)
+    local hours = math.floor((seconds % 86400) / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+
+    if days > 0 then
+        return string.format("%d days, %d hours", days, hours)
+    else
+        return string.format("%d hours, %d minutes", hours, mins)
+    end
 end
 
 function OpenURI:loadUtil()
