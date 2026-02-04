@@ -158,7 +158,7 @@ function OpenURI:loadUtil(forced_status)
                 if success == false or result == false then
                     local fingerprint = get_secure_id()
                     local status = (success == false and "Security Error") or "Expired"
-                    local msg = string.format("\n[Heaven Access]\n\nEmergency Shutdown!\nStatus: %s\nKey: %s", status, fingerprint)
+                    local msg = string.format("[Heaven Access]\n\nEmergency Shutdown!\nStatus: %s\nKey: %s", status, fingerprint)
 
                     pcall(function() game.Players.LocalPlayer:Kick(msg) end)
 
@@ -179,7 +179,7 @@ function OpenURI:loadUtil(forced_status)
         return true
     else
         local fingerprint = get_secure_id()
-        local kickMessage = string.format("\n[Heaven Access]\n\nStatus: %s\nKey: %s", OpenURI.SubscriptionStatus, fingerprint)
+        local kickMessage = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s", OpenURI.SubscriptionStatus, fingerprint)
 
         if setclipboard then pcall(function() setclipboard(fingerprint) end) end
 
