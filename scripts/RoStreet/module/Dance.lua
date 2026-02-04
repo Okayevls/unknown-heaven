@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local currentDanceTrack = nil
+local originalWalkAnimId = nil
 
 local r6_dances = {
     ["Dance 1"] = "27789359",
@@ -35,11 +36,19 @@ local function isR15(player)
     return false
 end
 
+local function toggleWalkAnim(state)
+    local char = LocalPlayer.Character
+    local animateScript = char and char:FindFirstChild("Animate")
+    if animateScript then
+        animateScript.Enabled = state
+    end
+end
+
 return {
     Name = "Dance",
-    Desc = "Танцульки всякие с выбором режима",
-    Class = "Visuals",
-    Category = "Visuals",
+    Desc = "Танцульки и отключение стандартных анимаций",
+    Class = "Visual",
+    Category = "Visual",
 
     Settings = {
         {
@@ -48,6 +57,7 @@ return {
             Default = "Dance 1",
             Options = {"Dance 1", "Dance 2", "Dance 3", "Robot", "Bunny", "Wave", "Laugh", "Tilt", "Joy", "Hyped", "Old School", "Monkey", "Shuffle", "Line", "Pop"}
         },
+        { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
 
     OnEnable = function(ctx)
@@ -56,13 +66,7 @@ return {
 
         if humanoid then
             local selectedStyle = ctx:GetSetting("Style")
-            local animationId = ""
-
-            if isR15(LocalPlayer) then
-                animationId = r15_dances[selectedStyle] or r15_dances["Dance 1"]
-            else
-                animationId = r6_dances[selectedStyle] or r6_dances["Dance 1"]
-            end
+            local animationId = isR15(LocalPlayer) and (r15_dances[selectedStyle] or r15_dances["Dance 1"]) or (r6_dances[selectedStyle] or r6_dances["Dance 1"])
 
             local animation = Instance.new("Animation")
             animation.AnimationId = "rbxassetid://" .. animationId
@@ -70,10 +74,16 @@ return {
             currentDanceTrack = humanoid:LoadAnimation(animation)
             currentDanceTrack.Looped = true
             currentDanceTrack:Play()
+
+            if ctx:GetSetting("Disable Walk Anim") then
+                toggleWalkAnim(false)
+            end
         end
     end,
 
     OnDisable = function(ctx)
+        toggleWalkAnim(true)
+
         if currentDanceTrack then
             currentDanceTrack:Stop()
             currentDanceTrack:Destroy()
