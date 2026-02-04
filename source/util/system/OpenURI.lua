@@ -14,8 +14,6 @@ OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
 local function get_world_time()
-    local UTC_OFFSET = 2
-
     local success, result = pcall(function()
         local response = game:HttpGet("https://google.com", true)
         local date_str = response:match("date: (.-\r)")
@@ -23,17 +21,15 @@ local function get_world_time()
             local day, month_str, year, hour, min, sec = date_str:match("%a+, (%d+) (%a+) (%d+) (%d+):(%d+):(%d+)")
             local months = {Jan=1,Feb=2,Mar=3,Apr=4,May=5,Jun=6,Jul=7,Aug=8,Sep=9,Oct=10,Nov=11,Dec=12}
 
-            local utc_time = os.time({
+            return os.time({
                 day=tonumber(day), month=months[month_str], year=tonumber(year),
                 hour=tonumber(hour), min=tonumber(min), sec=tonumber(sec)
             })
-
-            return utc_time + (UTC_OFFSET * 3600)
         end
     end)
 
-    local finalTime = success and result or (os.time())
-    warn("[OpenURI] Adjusted Network Time: " .. os.date("%d.%m.%Y-%H:%M", finalTime))
+    local finalTime = success and result or os.time(os.date("!*t"))
+    warn("[OpenURI] World Time (UTC): " .. os.date("!%d.%m.%Y-%H:%M", finalTime))
     return finalTime
 end
 
@@ -41,7 +37,7 @@ local function parse_expiry(date_str)
     if not date_str or date_str == "" then return math.huge end
     local day, month, year, hour, min = date_str:match("(%d%d)%.(%d%d)%.(%d%d%d%d)-(%d%d):(%d%d)")
     if day then
-        return os.time({
+        local t = os.time({
             day = tonumber(day),
             month = tonumber(month),
             year = tonumber(year),
@@ -49,6 +45,12 @@ local function parse_expiry(date_str)
             min = tonumber(min),
             sec = 0
         })
+
+        local local_now = os.time()
+        local utc_now = os.time(os.date("!*t", local_now))
+        local diff = os.difftime(local_now, utc_now)
+
+        return t - diff
     end
     return math.huge
 end
