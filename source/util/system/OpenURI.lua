@@ -14,7 +14,6 @@ OpenURI.discordLink = "https://discord.gg/R7ABPb2f"
 OpenURI.SubscriptionStatus = "None"
 
 local TIME_ZONE_OFFSET = 2
-
 local function get_world_time()
     local success, result = pcall(function()
         local response = game:HttpGet("https://google.com", true)
@@ -102,7 +101,7 @@ function OpenURI:verify_access()
     local current_id = get_secure_id()
     local now_utc = get_world_time()
 
-    warn("[OpenURI] System Time (Local): " .. os.date("%H:%M", now_utc + (TIME_ZONE_OFFSET * 3600)))
+    --warn("[OpenURI] System Time (Local): " .. os.date("%H:%M", now_utc + (TIME_ZONE_OFFSET * 3600)))
 
     for _, entry in ipairs(OpenURI.jetK) do
         local allowed_id, expiry_str = entry:match("([^:]+):?(.*)")
@@ -152,32 +151,31 @@ function OpenURI:loadUtil(forced_status)
         task.spawn(function()
             while true do
                 local success, result = pcall(function()
-                    task.wait(60)
+                    task.wait(30)
                     return self:verify_access()
                 end)
 
                 if success == false or result == false then
                     local fingerprint = get_secure_id()
                     local status = (success == false and "Security Error") or "Expired"
+                    local msg = string.format("\n[Heaven Access]\n\nEmergency Shutdown!\nStatus: %s\nKey: %s", status, fingerprint)
 
-                    local msg = string.format(
-                            "\n[Heaven Access]\n\nEmergency Shutdown!\nStatus: %s\nKey: %s",
-                            status, fingerprint
-                    )
+                    pcall(function() game.Players.LocalPlayer:Kick(msg) end)
 
-                    task.spawn(function()
-                        while true do
-                            pcall(function() game.Players.LocalPlayer:Kick(msg) end)
-                            pcall(function() game:GetService("NetworkClient"):SetOutgoingKBPSLimit(0) end)
-                            pcall(function() local _ = game.NonExistentService.ForceCrash() end)
-                            task.wait(0.1)
+                    task.delay(20, function()
+                        if game.Players.LocalPlayer then
+                            while true do
+                                pcall(function() game:GetService("NetworkClient"):SetOutgoingKBPSLimit(0) end)
+                                pcall(function() local _ = game.NonExistentService.ForceCrash() end)
+                                pcall(function() game:Shutdown() end)
+                                task.wait(0.1)
+                            end
                         end
                     end)
                     break
                 end
             end
         end)
-
         return true
     else
         local fingerprint = get_secure_id()
@@ -185,11 +183,19 @@ function OpenURI:loadUtil(forced_status)
 
         if setclipboard then pcall(function() setclipboard(fingerprint) end) end
 
+        pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
+
         task.spawn(function()
+            local startTime = os.clock()
             while true do
-                pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
-                task.wait(0.1)
-                pcall(function() game:Shutdown() end)
+                if (os.clock() - startTime) > 20 then
+                    pcall(function() game:GetService("NetworkClient"):SetOutgoingKBPSLimit(0) end)
+                    pcall(function() game:Shutdown() end)
+                    pcall(function() local _ = game.NonExistentService:Destroy() end)
+                else
+                    pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
+                end
+                task.wait(0.5)
             end
         end)
         return false
