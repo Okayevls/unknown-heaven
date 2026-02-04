@@ -83,7 +83,6 @@ getgenv().ctx = {
     moduleMgr = moduleMgr,
     DebugMode = true,
     Meta = meta,
-    System = system,
 }
 
 log:Info("Launching UI...")
