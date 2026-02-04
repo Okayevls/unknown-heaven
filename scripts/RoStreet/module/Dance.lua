@@ -46,7 +46,7 @@ end
 
 return {
     Name = "Dance",
-    Desc = "Танцульки и отключение стандартных анимаций",
+    Desc = "Танцульки всякие",
     Class = "Visuals",
     Category = "Visuals",
 
