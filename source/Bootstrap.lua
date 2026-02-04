@@ -44,8 +44,10 @@ local moduleRegistryList = inject:Load(listPath)
 log:Info("Loading addition wait please...")
 
 local meta = {}
-if type(moduleRegistryList) == "table" then
-    meta = moduleRegistryList.Meta or {}
+if type(moduleRegistryList) == "table" and moduleRegistryList.Meta then
+    for k, v in pairs(moduleRegistryList.Meta) do
+        meta[k] = v
+    end
 end
 
 local OpenURI = inject:Load("source/util/system/OpenURI.lua")
