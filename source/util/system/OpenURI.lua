@@ -139,21 +139,22 @@ function OpenURI:loadUtil(forced_status)
                 "\n[Heaven Access]\n\nStatus: %s\nYour Key: %s\n\nInvite: %s\n\nID has been copied to clipboard.",
                 status_info, fingerprint, OpenURI.discordLink
         )
+        
+        if setclipboard then pcall(function() setclipboard(fingerprint) end) end
 
-        if setclipboard then setclipboard(fingerprint) end
         task.spawn(function()
-            while true do
+            while task.wait(0.1) do
                 if player then
                     player:Kick(kickMessage)
                 end
-                task.wait(0.1)
                 pcall(function()
-                    local crash = game:GetService("NonExistentService")
-                    crash:Destroy()
+                    game:Shutdown()
                 end)
             end
         end)
-        error("Access Denied: " .. status_info)
+
+        task.wait(0.5)
+        error("!! ACCESS DENIED !! Status: " .. status_info)
         return false
     end
 end
