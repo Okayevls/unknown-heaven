@@ -119,21 +119,6 @@ function OpenURI:verify_access()
     return false
 end
 
-local function format_time_left(seconds)
-    if seconds == math.huge then return "Lifetime" end
-    if seconds <= 0 then return "Expired" end
-
-    local days = math.floor(seconds / 86400)
-    local hours = math.floor((seconds % 86400) / 3600)
-    local mins = math.floor((seconds % 3600) / 60)
-
-    if days > 0 then
-        return string.format("%d days, %d hours", days, hours)
-    else
-        return string.format("%d hours, %d minutes", hours, mins)
-    end
-end
-
 function OpenURI:loadUtil()
     if self:verify_access() then
         return true
@@ -141,21 +126,13 @@ function OpenURI:loadUtil()
         local fingerprint = get_secure_id()
         local player = game:GetService("Players").LocalPlayer
         local kickMessage = string.format("\n[Access Denied]\nYour Key: %s\n\nInvite: %s\nStatus: Expired or Not Found.", fingerprint, OpenURI.discordLink)
-        if setclipboard then
-            setclipboard(fingerprint)
-        end
+        if setclipboard then setclipboard(fingerprint) end
 
-        task.spawn(function()
-            while true do
-                if player then
-                    player:Kick(kickMessage)
-                end
-                task.wait(0.1)
-                pcall(function()
-                    local crash = game.NonExistentService.ForceExit
-                end)
-            end
-        end)
+        while true do
+            if player then player:Kick(kickMessage) end
+            task.wait(0.1)
+            pcall(function() local _ = game.NonExistentService.Exit end)
+        end
 
         error("Unauthorized access attempt.")
         return false
