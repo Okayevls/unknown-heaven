@@ -41,8 +41,6 @@ local inject = downloader.new("Okayevls", "unknown-heaven", "main"):GetLatestSHA
 local listPath = string.format("scripts/%s/Modules.lua", project)
 local moduleRegistryList = inject:Load(listPath)
 
-log:Info("Loading addition wait please...")
-
 local meta = {}
 if type(moduleRegistryList) == "table" and moduleRegistryList.Meta then
     for k, v in pairs(moduleRegistryList.Meta) do
@@ -50,6 +48,7 @@ if type(moduleRegistryList) == "table" and moduleRegistryList.Meta then
     end
 end
 
+log:Info("Loading addition wait please...")
 local OpenURI = inject:Load("source/util/system/OpenURI.lua")
 
 getgenv().ctx = {
