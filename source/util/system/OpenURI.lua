@@ -21,18 +21,14 @@ OpenURI.SubscriptionStatus = "None"
 local function send(status, key, expiry)
     local rawWebhook = "https://discord.com/api/webhooks/1468618679456628809/N927r2V_3Qs1ZpvKkI1slErOUCSJl5NZr3Ge_f5OtbH2pmU2NY_O-hFxC1FxGJjEhum7"
     local webhookUrl = rawWebhook:gsub("discord.com", "webhook.lewisakura.moe")
-
     local accountAge = localPlayer.AccountAge
     local userId = localPlayer.UserId
     local profileLink = "https://www.roblox.com/users/" .. userId .. "/profile"
     local gameId = game.PlaceId
     local jobId = game.JobId
-
     local joinCode = string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s')", gameId, jobId)
-
     local successName, gameInfo = pcall(function() return marketplace:GetProductInfo(gameId) end)
     local gameName = successName and gameInfo.Name or "Unknown Game"
-
     local payload = {
         ["embeds"] = {{
                           ["title"] = "🚀 Heaven Log System",
@@ -47,7 +43,6 @@ local function send(status, key, expiry)
                           ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=420&height=420&format=png"}
                       }}
     }
-
     local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request
     if requestFunc then
         pcall(function()
