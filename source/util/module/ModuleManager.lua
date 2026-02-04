@@ -22,6 +22,7 @@ export type ModuleCtx = {
    GetSettingData: (self: ModuleCtx, settingName: string) -> SettingDef?,
 
    Shared: { [string]: any },
+   Changed: RBXScriptSignal,
    SetEnabled: (self: ModuleCtx, enabled: boolean) -> (),
 }
 
@@ -214,6 +215,7 @@ Category = categoryName,
 Name = moduleName,
 Class = if st then st.Definition.Class else nil,
 Shared = GlobalSharedStorage,
+Changed = mgr.Changed,
 
 GetSetting = function(self: ModuleCtx, settingName: string)
     return mgr:GetSetting(categoryName, moduleName, settingName)
