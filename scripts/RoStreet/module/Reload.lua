@@ -49,7 +49,7 @@ end
 
 return {
     Name = "Reload",
-    Desc = "Нету замедления от перезарядки",
+    Desc = "Все утилиты с перезарядкой",
     Class = "Combat",
     Category = "Combat",
     Settings = {
@@ -61,21 +61,15 @@ return {
 
     OnEnable = function(ctx)
         local settingsPath = RS:FindFirstChild("Settings", true)
-        local function toggleReloadBind()
-            if ctx:GetSetting("Auto Reload") then
-                _connectionRenderStepped = RunService.RenderStepped:Connect(function()
-                    local weapon = getEquippedWeapon()
-                    if weapon then
-                        local ammo = weapon:FindFirstChild("Ammo")
-                        if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
-                            weapon.Reload:InvokeServer()
-                        end
-                    end
-                end)
+        local function toggleNoSlowReloadBind()
+            if ctx:GetSetting("No Slow Reload") then
+                ContextActionService:BindAction("BlockReload", handleReloadAction, false, Enum.KeyCode.R)
             else
-                if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
+                ContextActionService:UnbindAction("BlockReload")
             end
+        end
 
+        local function toggleFastReloadBind()
             if ctx:GetSetting("Fast Reload") then
                 if settingsPath then
                     local WeaponSettings = require(settingsPath)
@@ -94,7 +88,6 @@ return {
                         end
                     end
                 end
-
                 for _, v in pairs(getgc(true)) do
                     if type(v) == "table" then
                         local cfg = rawget(v, "Configuration")
@@ -151,20 +144,33 @@ return {
                 end
                 safeClear(_originalReloadFuncs)
             end
+        end
 
-            if ctx:GetSetting("No Slow Reload") then
-                ContextActionService:BindAction("BlockReload", handleReloadAction, false, Enum.KeyCode.R)
+        local function toggleAutoReloadBind()
+            if ctx:GetSetting("Auto Reload") then
+                _connectionRenderStepped = RunService.RenderStepped:Connect(function()
+                    local weapon = getEquippedWeapon()
+                    if weapon then
+                        local ammo = weapon:FindFirstChild("Ammo")
+                        if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
+                            weapon.Reload:InvokeServer()
+                        end
+                    end
+                end)
             else
-                ContextActionService:UnbindAction("BlockReload")
+                if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
             end
         end
 
-        toggleReloadBind()
+        toggleNoSlowReloadBind()
+        toggleFastReloadBind()
+        toggleAutoReloadBind()
 
         settingsConnection = ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
-                if payload.key == "No Slow Reload" then toggleReloadBind() end
-                if payload.key == "Fast Reload" then toggleReloadBind() end
+                if payload.key == "No Slow Reload" then toggleNoSlowReloadBind() end
+                if payload.key == "Fast Reload" then toggleFastReloadBind() end
+                if payload.key == "Auto Reload" then toggleAutoReloadBind() end
             end
         end)
     end,
