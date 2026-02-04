@@ -235,7 +235,7 @@ return {
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Auto Reload", Default = false },
-        { Type = "Slider", Name = "State Reload Ammo", Default = 30, Min = 0, Max = 100, Step = 1, Dependency = "Auto Reload" },
+        { Type = "Slider", Name = "State Reload Ammo", Default = 30, Min = 0, Max = 100, Step = 1 },
     },
 
     OnEnable = function(ctx)
