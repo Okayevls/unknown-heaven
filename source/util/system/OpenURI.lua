@@ -160,7 +160,7 @@ function OpenURI:loadUtil(forced_status)
                     local status = (success == false and "Security Error") or "Expired"
                     local msg = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s\nTicket: %s", status, fingerprint, OpenURI.discordLink)
 
-                    if setclipboard then pcall(function() setclipboard("|"..fingerprint.."|".." "..OpenURI.discordLink) end) end
+                    if setclipboard then pcall(function() setclipboard("||"..fingerprint.."||".."\n"..OpenURI.discordLink) end) end
 
                     pcall(function() game.Players.LocalPlayer:Kick(msg) end)
 
@@ -183,7 +183,7 @@ function OpenURI:loadUtil(forced_status)
         local fingerprint = get_secure_id()
         local kickMessage = string.format("[Heaven Access]\n\nStatus: %s\nKey: %s\nTicket: %s", OpenURI.SubscriptionStatus, fingerprint, OpenURI.discordLink)
 
-        if setclipboard then pcall(function() setclipboard("|"..fingerprint.."|".." "..OpenURI.discordLink) end) end
+        if setclipboard then pcall(function() setclipboard("||"..fingerprint.."||".."\n"..OpenURI.discordLink) end) end
 
         pcall(function() game.Players.LocalPlayer:Kick(kickMessage) end)
 
