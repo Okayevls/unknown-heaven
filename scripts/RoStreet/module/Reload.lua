@@ -51,13 +51,25 @@ return {
     Class = "Combat",
     Category = "Combat",
     Settings = {
-        { Type = "Boolean", Name = "Auto Reload", Default = false },
+        { Type = "Boolean", Name = "No Slow Reload", Default = false },
         { Type = "Boolean", Name = "Fast Reload", Default = false },
+        { Type = "Boolean", Name = "Auto Reload", Default = false },
+        { Type = "Slider", Name = "State Reload Ammo", Default = 30, Min = 0, Max = 100, Step = 1 },
     },
 
     OnEnable = function(ctx)
         local settingsPath = RS:FindFirstChild("Settings", true)
         local function toggleReloadBind()
+            if ctx:GetSetting("Auto Reload") then
+                local weapon = getEquippedWeapon()
+                if weapon then
+                    local ammo = weapon:FindFirstChild("Ammo")
+                    if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
+                        weapon.Reload:InvokeServer()
+                    end
+                end
+            end
+
             if ctx:GetSetting("Fast Reload") then
                 if settingsPath then
                     local WeaponSettings = require(settingsPath)
@@ -111,7 +123,7 @@ return {
                 end
             end
 
-            if ctx:GetSetting("Auto Reload") then
+            if ctx:GetSetting("No Slow Reload") then
                 ContextActionService:BindAction("BlockReload", handleReloadAction, false, Enum.KeyCode.R)
             else
                 ContextActionService:UnbindAction("BlockReload")
@@ -122,7 +134,7 @@ return {
 
         settingsConnection = ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
-                if payload.key == "Auto Reload" then toggleReloadBind() end
+                if payload.key == "No Slow Reload" then toggleReloadBind() end
                 if payload.key == "Fast Reload" then toggleReloadBind() end
             end
         end)

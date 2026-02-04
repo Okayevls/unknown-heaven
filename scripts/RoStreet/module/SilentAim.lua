@@ -234,8 +234,6 @@ return {
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
-        { Type = "Boolean", Name = "Auto Reload", Default = false },
-        { Type = "Slider", Name = "State Reload Ammo", Default = 30, Min = 0, Max = 100, Step = 1 },
     },
 
     OnEnable = function(ctx)
@@ -278,16 +276,6 @@ return {
             local target = selectedTarget ~= nil and selectedTarget or randomTarget
             if isShooting and (randomTarget or selectedTarget) then
                 shoot(target)
-            end
-
-            if ctx:GetSetting("Auto Reload") then
-                local weapon = getEquippedWeapon()
-                if weapon then
-                    local ammo = weapon:FindFirstChild("Ammo")
-                    if ammo and ammo.Value < ctx:GetSetting("State Reload Ammo") and weapon:FindFirstChild("Reload") then
-                        weapon.Reload:InvokeServer()
-                    end
-                end
             end
 
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
