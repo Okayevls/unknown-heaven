@@ -16,6 +16,8 @@ return {
         "scripts/RoStreet/module/KickTarget.lua",
         "scripts/RoStreet/module/Desync.lua",
         "scripts/RoStreet/module/Dance.lua",
+
+        "scripts/RoStreet/module/Test.lua",
     },
 
     System = {
