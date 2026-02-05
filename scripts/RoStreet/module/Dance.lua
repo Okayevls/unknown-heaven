@@ -12,7 +12,9 @@ local r15_dances = {
     ["Shuffle"] = "10714076981", ["Line"] = "10714392151", ["Pop"] = "11444443576",
     ["Floss"] = "10714340543", ["HeyMove"] = "119734573196374", ["BillyBounce"] = "133394554631338",
     ["TakeTheL"] = "117865821073911", ["Clouds"] = "99807821959066", ["Popular"] = "94292758607678",
-    ["Shake"] = "100795219530433", ["IWantMonkey"] = "104248876465825"
+    ["Shake"] = "100795219530433", ["IWantMoney"] = "104248876465825", ["Gangnam"] = "131104967711844",
+    ["Griddy"] = "121966805049108", ["IDK"] = "97148848007002", ["Coffin"] = "126771729094882",
+    ["Sturdy"] = "140333103929828", ["Jumpstyle"] = "138647889956297", ["Street"] = "82378883639086"
 }
 
 local function toggleWalkAnim(state)
@@ -60,11 +62,12 @@ return {
             Default = "Dance 1",
             Options = {"Dance 1", "Dance 2", "Tilt", "Joy", "Hyped", "Old School",
                        "Monkey", "Shuffle", "Line", "Pop", "Floss", "HeyMove", "BillyBounce",
-                       "TakeTheL", "Clouds", "Popular", "Shake", "IWantMonkey"}
+                       "TakeTheL", "Clouds", "Popular", "Shake", "IWantMoney", "Gangnam",
+                       "Griddy", "IDK", "Coffin", "Sturdy", "Jumpstyle", "Street"}
         },
         { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
-
+    
     OnEnable = function(ctx)
         refresh(ctx)
 
