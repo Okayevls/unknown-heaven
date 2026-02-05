@@ -30,7 +30,7 @@ local function applyStyle(obj, radius)
     create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
--- Система перетаскивания с жестким ограничением экраном
+-- ФИНАЛЬНЫЙ ФИКС ДРАГА: Теперь работает по всему экрану
 local function applyClampedDrag(frame)
     local dragging, dragStart, startPos
 
@@ -38,7 +38,8 @@ local function applyClampedDrag(frame)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = frame.Position
+            -- Запоминаем текущий Offset, чтобы от него плясать
+            startPos = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
         end
     end))
 
@@ -47,19 +48,22 @@ local function applyClampedDrag(frame)
             local delta = input.Position - dragStart
             local screen = screenGui.AbsoluteSize
             local size = frame.AbsoluteSize
-            local ap = frame.AnchorPoint
 
-            -- Вычисляем границы с учетом AnchorPoint (центральной точки)
-            local minX = size.X * ap.X
-            local maxX = screen.X - (size.X * (1 - ap.X))
-            local minY = size.Y * ap.Y
-            local maxY = screen.Y - (size.Y * (1 - ap.Y))
+            -- Вычисляем позицию верхнего левого угла относительно AnchorPoint
+            -- Это позволяет нам игнорировать AnchorPoint (0.5 или 0 — не важно)
+            local centerXOffset = size.X * frame.AnchorPoint.X
+            local centerYOffset = size.Y * frame.AnchorPoint.Y
 
-            -- Жесткий зажим в границах экрана
-            local newX = math.clamp(startPos.X.Offset + delta.X, minX, maxX)
-            local newY = math.clamp(startPos.Y.Offset + delta.Y, minY, maxY)
+            -- Новые координаты (Offset)
+            local targetX = startPos.X + delta.X
+            local targetY = startPos.Y + delta.Y
 
-            frame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
+            -- Ограничение: Левый край | Правый край
+            local clampedX = math.clamp(targetX, centerXOffset, screen.X - (size.X - centerXOffset))
+            -- Ограничение: Верхний край | Нижний край
+            local clampedY = math.clamp(targetY, centerYOffset, screen.Y - (size.Y - centerYOffset))
+
+            frame.Position = UDim2.new(frame.Position.X.Scale, clampedX, frame.Position.Y.Scale, clampedY)
         end
     end))
 
@@ -72,7 +76,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Clamped Borders & Smooth FPS",
+    Desc = "Heaven HUD: Fixed Clamping & Movement",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -87,7 +91,7 @@ return {
         local playerGui = player:WaitForChild("PlayerGui")
         screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
 
-        -- 1. WATERMARK
+        -- 1. WATERMARK (Центрированная, но теперь полностью мобильная)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
@@ -149,7 +153,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Clamped borders enabled")
+            spawnNotify("Heaven", "Anchor-aware clamping fixed!")
         end
 
         -- 4. FLOATING AD
