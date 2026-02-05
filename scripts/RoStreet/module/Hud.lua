@@ -4,15 +4,46 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
+local screenGui = nil
 
--- Локальные хранилища для очистки при OnDisable
-local HudElements = {}
-local HudConnections = {}
+-- Хранилище для очистки
+local elements = {}
+local connections = {}
 
--- Вспомогательная функция для Dragging (перетаскивания)
-local function enableDragging(frame)
+-- Цвета твоего дизайна (Heaven White Style)
+local Theme = {
+    Panel = Color3.fromRGB(255, 255, 255),
+    Stroke = Color3.fromRGB(210, 225, 245),
+    Text = Color3.fromRGB(20, 35, 55),
+    SubText = Color3.fromRGB(95, 120, 155),
+    Accent = Color3.fromRGB(140, 200, 255),
+}
+
+-- Внутренние утилиты для создания дизайна
+local function create(class, props, parent)
+    local obj = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        obj[k] = v
+    end
+    if parent then obj.Parent = parent end
+    return obj
+end
+
+local function addCorner(parent, radius)
+    return create("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, parent)
+end
+
+local function addStroke(parent, color, thickness, transparency)
+    return create("UIStroke", {
+        Color = color or Theme.Stroke,
+        Thickness = thickness or 1,
+        Transparency = transparency or 0,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    }, parent)
+end
+
+local function applyDrag(frame)
     local dragging, dragInput, dragStart, startPos
-
     local conn1 = frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -20,28 +51,25 @@ local function enableDragging(frame)
             startPos = frame.Position
         end
     end)
-
     local conn2 = frame.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
-
     local conn3 = UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
-
-    table.insert(HudConnections, conn1)
-    table.insert(HudConnections, conn2)
-    table.insert(HudConnections, conn3)
+    table.insert(connections, conn1)
+    table.insert(connections, conn2)
+    table.insert(connections, conn3)
 end
 
 return {
     Name = "Hud",
-    Desc = "Показывает важную информацию и уведомления",
+    Desc = "Отображение Watermark, StaffList и уведомлений",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -53,28 +81,24 @@ return {
     },
 
     OnEnable = function(ctx)
-        -- Очистка на всякий случай
-        HudElements = {}
-        HudConnections = {}
+        local playerGui = player:WaitForChild("PlayerGui")
+        screenGui = create("ScreenGui", {Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true}, playerGui)
+        table.insert(elements, screenGui)
 
-        -- Доступ к глобальным функциям дизайна из твоего UI
-        -- Предполагаем, что Theme, mk, addCorner, addStroke доступны в окружении
-
-        -- 1. WaterMark
+        -- 1. WATERMARK
         if ctx:GetSetting("Watermark") then
-            local wm = mk("Frame", {
+            local wm = create("Frame", {
                 Name = "Watermark",
-                Parent = screenGui,
                 Size = UDim2.fromOffset(200, 34),
-                Position = UDim2.fromOffset(15, 15),
+                Position = UDim2.fromOffset(20, 20),
                 BackgroundColor3 = Theme.Panel,
+                Parent = screenGui
             })
             addCorner(wm, 10)
-            addStroke(wm, 0.1)
-            enableDragging(wm)
+            addStroke(wm)
+            applyDrag(wm)
 
-            mk("TextLabel", {
-                Parent = wm,
+            create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Text = "  HEAVEN  •  " .. player.Name .. "  •  beta",
@@ -82,132 +106,146 @@ return {
                 Font = Enum.Font.GothamBold,
                 TextSize = 13,
                 TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = wm
             })
 
-            local accentLine = mk("Frame", {
-                Parent = wm,
+            local line = create("Frame", {
                 Size = UDim2.new(0, 3, 0, 16),
-                Position = UDim2.fromOffset(6, 9),
+                Position = UDim2.fromOffset(8, 9),
                 BackgroundColor3 = Theme.Accent,
+                BorderSizePixel = 0,
+                Parent = wm
             })
-            addCorner(accentLine, 2)
-
-            table.insert(HudElements, wm)
+            addCorner(line, 2)
         end
 
-        -- 2. Staff List
+        -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
-            local sl = mk("Frame", {
+            local sl = create("Frame", {
                 Name = "StaffList",
-                Parent = screenGui,
-                Size = UDim2.fromOffset(180, 100),
-                Position = UDim2.fromOffset(15, 60),
+                Size = UDim2.fromOffset(180, 110),
+                Position = UDim2.fromOffset(20, 70),
                 BackgroundColor3 = Theme.Panel,
+                Parent = screenGui
             })
             addCorner(sl, 12)
-            addStroke(sl, 0.1)
-            enableDragging(sl)
+            addStroke(sl)
+            applyDrag(sl)
 
-            mk("TextLabel", {
-                Parent = sl,
-                Size = UDim2.new(1, 0, 0, 28),
+            create("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 30),
                 BackgroundTransparency = 1,
                 Text = "Staff Online",
                 TextColor3 = Theme.Accent,
                 Font = Enum.Font.GothamBold,
                 TextSize = 12,
+                Parent = sl
             })
 
-            local container = mk("Frame", {
-                Parent = sl,
-                Position = UDim2.fromOffset(0, 28),
-                Size = UDim2.new(1, 0, 1, -28),
+            local listFrame = create("Frame", {
+                Position = UDim2.fromOffset(0, 30),
+                Size = UDim2.new(1, 0, 1, -30),
                 BackgroundTransparency = 1,
+                Parent = sl
             })
-            addList(container, 4)
-            addPadding(container, 8)
+            create("UIListLayout", {Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center}, listFrame)
+            create("UIPadding", {PaddingTop = UDim.new(0, 5)}, listFrame)
 
-            -- Пример вывода
-            mk("TextLabel", {
-                Parent = container,
-                Size = UDim2.new(1, 0, 0, 18),
+            create("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 20),
                 BackgroundTransparency = 1,
-                Text = "No staff in server",
+                Text = "No staff found",
                 TextColor3 = Theme.SubText,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 11,
+                Parent = listFrame
             })
-
-            table.insert(HudElements, sl)
         end
 
-        -- 3. Notifications
+        -- 3. NOTIFICATIONS SYSTEM
         if ctx:GetSetting("Notifications") then
-            local notifyArea = mk("Frame", {
-                Parent = screenGui,
+            local notifyArea = create("Frame", {
+                Name = "NotifyArea",
                 Size = UDim2.new(0, 260, 1, -40),
-                Position = UDim2.new(1, -275, 0, 20),
+                Position = UDim2.new(1, -280, 0, 20),
                 BackgroundTransparency = 1,
+                Parent = screenGui
             })
-            local layout = addList(notifyArea, 8)
-            layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+            create("UIListLayout", {VerticalAlignment = Enum.VerticalAlignment.Bottom, Padding = UDim.new(0, 8)}, notifyArea)
 
-            table.insert(HudElements, notifyArea)
-
-            -- Глобальная функция уведомлений (чтобы другие модули могли звать)
-            _G.HeavenNotify = function(title, text, duration)
-                if not notifyArea or not notifyArea.Parent then return end
-
-                local n = mk("Frame", {
-                    Parent = notifyArea,
+            -- Внутренняя функция для создания уведомления
+            local function spawnNotify(title, msg)
+                local n = create("Frame", {
                     Size = UDim2.new(1, 0, 0, 54),
                     BackgroundColor3 = Theme.Panel,
                     ClipsDescendants = true,
+                    Parent = notifyArea
                 })
                 addCorner(n, 10)
-                addStroke(n, 0.1)
+                addStroke(n)
 
-                local c = mk("Frame", { Parent = n, Size = UDim2.fromScale(1,1), BackgroundTransparency = 1 })
-                addPadding(c, 10)
+                local pad = create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
 
-                mk("TextLabel", { Parent = c, Text = title, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Accent, Size = UDim2.new(1,0,0,16), TextXAlignment = 0, BackgroundTransparency = 1 })
-                mk("TextLabel", { Parent = c, Text = text, Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0,18), Size = UDim2.new(1,0,0,16), TextXAlignment = 0, BackgroundTransparency = 1 })
+                create("TextLabel", {
+                    Text = title,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = 13,
+                    TextColor3 = Theme.Accent,
+                    Size = UDim2.new(1, 0, 0, 16),
+                    TextXAlignment = 0,
+                    BackgroundTransparency = 1,
+                    Parent = n
+                })
+                create("TextLabel", {
+                    Text = msg,
+                    Font = Enum.Font.GothamMedium,
+                    TextSize = 11,
+                    TextColor3 = Theme.SubText,
+                    Position = UDim2.fromOffset(0, 18),
+                    Size = UDim2.new(1, 0, 0, 16),
+                    TextXAlignment = 0,
+                    BackgroundTransparency = 1,
+                    Parent = n
+                })
 
-                -- Анимация появления
                 n.Size = UDim2.new(1, 0, 0, 0)
-                tween(n, 0.3, {Size = UDim2.new(1, 0, 0, 54)})
+                TweenService:Create(n, TweenInfo.new(0.35), {Size = UDim2.new(1, 0, 0, 54)}):Play()
 
-                task.delay(duration or 4, function()
-                    local t = tween(n, 0.4, {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
-                    t.Completed:Connect(function() n:Destroy() end)
+                task.delay(4, function()
+                    local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
+                    tw:Play()
+                    tw.Completed:Connect(function() n:Destroy() end)
                 end)
             end
+
+            spawnNotify("Heaven Hud", "Successfully initialized visuals")
         end
 
-        -- 4. Floating Discord Ad
+        -- 4. FLOATING AD
         if ctx:GetSetting("DiscordAd") then
-            local ad = mk("Frame", {
-                Parent = screenGui,
-                Size = UDim2.fromOffset(160, 26),
+            local ad = create("Frame", {
+                Size = UDim2.fromOffset(150, 26),
                 BackgroundColor3 = Theme.Panel,
                 BackgroundTransparency = 0.85,
+                Parent = screenGui
             })
             addCorner(ad, 8)
-            addStroke(ad, 0.6)
+            addStroke(ad, Theme.Stroke, 1, 0.5)
 
-            mk("TextLabel", {
-                Parent = ad,
+            create("TextLabel", {
                 Size = UDim2.fromScale(1, 1),
                 BackgroundTransparency = 1,
                 Text = "discord.gg/heaven",
                 TextColor3 = Theme.Text,
                 TextTransparency = 0.5,
                 Font = Enum.Font.GothamBold,
-                TextSize = 11,
+                TextSize = 10,
+                Parent = ad
             })
 
-            local vel = Vector2.new(80, 80)
+            local vel = Vector2.new(70, 70)
             local adConn = RunService.RenderStepped:Connect(function(dt)
+                if not ad.Parent then return end
                 local pos = ad.AbsolutePosition
                 local size = ad.AbsoluteSize
                 local screen = screenGui.AbsoluteSize
@@ -217,24 +255,18 @@ return {
 
                 ad.Position = UDim2.fromOffset(pos.X + vel.X * dt, pos.Y + vel.Y * dt)
             end)
-
-            table.insert(HudConnections, adConn)
-            table.insert(HudElements, ad)
+            table.insert(connections, adConn)
         end
     end,
 
     OnDisable = function(ctx)
-        -- Удаление всех UI элементов
-        for _, el in pairs(HudElements) do
-            if el then el:Destroy() end
-        end
-        -- Отключение соединений
-        for _, conn in pairs(HudConnections) do
+        for _, conn in ipairs(connections) do
             if conn then conn:Disconnect() end
         end
-
-        HudElements = {}
-        HudConnections = {}
-        _G.HeavenNotify = nil
+        for _, el in ipairs(elements) do
+            if el then el:Destroy() end
+        end
+        connections = {}
+        elements = {}
     end,
 }
