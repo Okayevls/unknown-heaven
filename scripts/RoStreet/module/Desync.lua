@@ -112,7 +112,7 @@ return {
 
                         rootPart.CFrame = desync.old_position
 
-                        if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
+                        if ctx.Shared.IsShooting == true or rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
                             local ground = backGroundY
                             rootPart.CFrame = CFrame.new(rootPart.Position.X, ground, rootPart.Position.Z)
                             desync.teleportPosition = Vector3.new(rootPart.Position.X, ground, rootPart.Position.Z)

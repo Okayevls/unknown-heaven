@@ -10,6 +10,7 @@ local randomTarget = nil
 local selectedTarget = nil
 local line = nil
 local isShooting = false
+local isShootingPacket = false
 
 local SupportedWeapons = {
     ["AW1"] = true, ["Ak"] = true, ["Barrett"] = true, ["Deagle"] = true, ["Double Barrel"] = true, ["Draco"] = true,
@@ -175,7 +176,7 @@ local function shoot(targetPlayer, ctx)
         local v = root.Velocity
         predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
     end
-    
+
     local muzzle
     if gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front") then
         muzzle = gun.Main.Front
@@ -183,7 +184,9 @@ local function shoot(targetPlayer, ctx)
         muzzle = gun.Muzzle
     end
 
+    isShootingPacket = true
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
+    isShootingPacket = false
 
     if ammo.Value == lastAmmoPerAmmoObject[ammo] then
         return
@@ -269,6 +272,7 @@ return {
             end
         end)
         _connectionRenderStepped = RunService.RenderStepped:Connect(function()
+            ctx.Shared.IsShooting = isShootingPacket
             if selectedTarget ~= nil then
                 updateLine()
                 randomTarget = nil
