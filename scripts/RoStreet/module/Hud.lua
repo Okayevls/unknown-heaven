@@ -17,7 +17,6 @@ local Theme = {
     SubText = Color3.fromRGB(95, 120, 155),
 }
 
--- Увеличенный отступ, чтобы не липло к бару (36px стандарт + запас)
 local SAFE_TOP = 55
 
 local function create(class, props, parent)
@@ -55,7 +54,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Visual Improvements & Fixes",
+    Desc = "Heaven HUD: Adjusted Positions",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -75,13 +74,13 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (Широкая плашка, мелкий текст, по центру ниже топа)
+        -- 1. WATERMARK (Немного выше)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 AnchorPoint = Vector2.new(0.5, 0),
-                Size = UDim2.fromOffset(260, 30), -- Шире и чуть ниже
-                Position = UDim2.new(0.5, 0, 0, SAFE_TOP),
+                Size = UDim2.fromOffset(260, 30),
+                Position = UDim2.new(0.5, 0, 0, SAFE_TOP - 5), -- Поднял
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -94,17 +93,17 @@ return {
                 Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  developer build",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamMedium,
-                TextSize = 11, -- Текст меньше
+                TextSize = 11,
                 Parent = wm
             })
         end
 
-        -- 2. STAFF LIST (С фиксом отступа от края и верха)
+        -- 2. STAFF LIST (Немного ниже)
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, SAFE_TOP), -- Тот же SAFE_TOP
+                Position = UDim2.fromOffset(20, SAFE_TOP + 10), -- Опустил
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -140,13 +139,12 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS (Снизу, но выше чата/инвентаря)
+        -- 3. NOTIFICATIONS (Немного ниже)
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
                 Size = UDim2.new(0, 260, 0.5, 0),
-                -- Поднимаем над нижним краем (0.8 от высоты экрана)
-                Position = UDim2.new(1, -280, 0.8, -100),
+                Position = UDim2.new(1, -280, 0.8, -75), -- Опустил (было -100)
                 AnchorPoint = Vector2.new(0, 1),
                 BackgroundTransparency = 1,
                 Parent = screenGui
@@ -191,14 +189,14 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven System", "UI Elements adjusted")
+            spawnNotify("Heaven", "Positions Updated")
         end
 
-        -- 4. FLOATING AD (Без фона и обводки, плавно)
+        -- 4. FLOATING AD
         if ctx:GetSetting("DiscordAd") then
             local adLabel = create("TextLabel", {
                 Size = UDim2.fromOffset(150, 24),
-                BackgroundTransparency = 1, -- Убрали фон
+                BackgroundTransparency = 1,
                 Text = "discord.gg/heaven",
                 TextColor3 = Theme.Text,
                 TextTransparency = 0.6,
@@ -213,21 +211,15 @@ return {
 
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
                 if not adLabel or not adLabel.Parent then return end
-
                 local screen = screenGui.AbsoluteSize
                 if screen.X == 0 then return end
-
                 local size = adLabel.AbsoluteSize
 
                 currentX = currentX + (vel.X * dt)
                 currentY = currentY + (vel.Y * dt)
 
-                if currentX <= 0 or currentX + size.X >= screen.X then
-                    vel = Vector2.new(-vel.X, vel.Y)
-                end
-                if currentY <= SAFE_TOP or currentY + size.Y >= screen.Y then
-                    vel = Vector2.new(vel.X, -vel.Y)
-                end
+                if currentX <= 0 or currentX + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
+                if currentY <= SAFE_TOP or currentY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
 
                 adLabel.Position = UDim2.fromOffset(currentX, currentY)
             end))
