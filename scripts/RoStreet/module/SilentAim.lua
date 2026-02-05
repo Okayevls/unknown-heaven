@@ -150,6 +150,7 @@ end
 
 local lastAmmoPerAmmoObject = {}
 local lastPositions = {}
+local targetHistory = {}
 
 local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
@@ -169,21 +170,38 @@ local function shoot(targetPlayer, ctx)
     local root = char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
-   --local predicted = head.Position
-
     local predicted = head.Position
     local mode = ctx:GetSetting("Resolver Mode")
-
+    local pingBoost = ctx:GetSetting("Prediction Velocity")
     if ctx:GetSetting("Resolver") then
         if mode == "Velocity" then
-            predicted = head.Position + (root.Velocity * ctx:GetSetting("Prediction Velocity"))
+            predicted = head.Position + (root.Velocity * pingBoost)
         elseif mode == "Delta" then
             local lastPos = lastPositions[targetPlayer.UserId]
             if lastPos then
                 local deltaVelocity = (root.Position - lastPos) / task.wait()
-                predicted = head.Position + (deltaVelocity * ctx:GetSetting("Prediction Velocity"))
+                predicted = head.Position + (deltaVelocity * pingBoost)
             end
             lastPositions[targetPlayer.UserId] = root.Position
+        elseif mode == "Smart" then
+            local userId = targetPlayer.UserId
+            local currentPos = root.Position
+            local currentTime = tick()
+
+            if not targetHistory[userId] then
+                targetHistory[userId] = { pos = currentPos, time = currentTime }
+            end
+            
+            local history = targetHistory[userId]
+            local timeDiff = currentTime - history.time
+            local realVelocity = (currentPos - history.pos) / (timeDiff > 0 and timeDiff or 0.01)
+
+            if root.Velocity.Magnitude < 5 and realVelocity.Magnitude > 10 then
+                predicted = head.Position + (realVelocity * pingBoost)
+            else
+                predicted = head.Position + (root.Velocity * pingBoost)
+            end
+            targetHistory[userId] = { pos = currentPos, time = currentTime }
         elseif mode == "Smooth" then
             local v = root.Velocity
             predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
@@ -252,7 +270,7 @@ return {
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Resolver", Default = false },
-        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Smooth", "Delta"} },
+        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Smooth", "Delta", "Smart"} },
         { Type = "Boolean", Name = "Prediction", Default = true },
         { Type = "Slider", Name = "Prediction Velocity", Default = 0.165, Min = 0.1, Max = 0.5, Step = 0.005 },
     },
@@ -333,6 +351,9 @@ return {
             line = nil
         end
 
+        table.clear(lastPositions)
+        table.clear(targetHistory)
+        table.clear(lastAmmoPerAmmoObject)
         ProximityPromptService.Enabled = true
     end,
 }
