@@ -27,72 +27,52 @@ end
 
 local function applyStyle(obj, radius)
     create("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, obj)
-    return create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
+    create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
--- Функция проверки пересечения двух Rect
-local function getOverlap(frame1, frame2)
-    local p1, s1 = frame1.AbsolutePosition, frame1.AbsoluteSize
-    local p2, s2 = frame2.AbsolutePosition, frame2.AbsoluteSize
-
-    return (p1.X < p2.X + s2.X and p1.X + s1.X > p2.X and
-            p1.Y < p2.Y + s2.Y and p1.Y + s1.Y > p2.Y)
-end
-
--- Логика перетаскивания с коллизиями
-local function applyCollisionDrag(frame)
+-- Система перетаскивания с жестким ограничением экраном
+local function applyClampedDrag(frame)
     local dragging, dragStart, startPos
-    local stroke = frame:FindFirstChildOfClass("UIStroke")
 
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging, dragStart, startPos = true, input.Position, frame.Position
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
         end
     end))
 
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            local screen = screenGui.AbsoluteSize
+            local size = frame.AbsoluteSize
+            local ap = frame.AnchorPoint
 
-            -- Проверка на контакт
-            local colliding = false
-            for _, other in ipairs(elements) do
-                if other:IsA("Frame") and other ~= frame and other.Visible and other.Name ~= "Ad" then
-                    if getOverlap(frame, other) then
-                        colliding = true
-                        break
-                    end
-                end
-            end
-            if stroke then stroke.Color = colliding and Theme.Accent or Theme.Stroke end
+            -- Вычисляем границы с учетом AnchorPoint (центральной точки)
+            local minX = size.X * ap.X
+            local maxX = screen.X - (size.X * (1 - ap.X))
+            local minY = size.Y * ap.Y
+            local maxY = screen.Y - (size.Y * (1 - ap.Y))
+
+            -- Жесткий зажим в границах экрана
+            local newX = math.clamp(startPos.X.Offset + delta.X, minX, maxX)
+            local newY = math.clamp(startPos.Y.Offset + delta.Y, minY, maxY)
+
+            frame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
         end
     end))
 
     table.insert(connections, UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            if stroke then stroke.Color = Theme.Stroke end
-
-            -- Если после отпускания есть коллизия — отодвигаем
-            for _, other in ipairs(elements) do
-                if other:IsA("Frame") and other ~= frame and other.Visible and other.Name ~= "Ad" then
-                    if getOverlap(frame, other) then
-                        -- Сдвигаем текущий фрейм чуть ниже соседа плавно
-                        local newY = other.Position.Y.Offset + other.Size.Y.Offset + 10
-                        TweenService:Create(frame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                            Position = UDim2.new(frame.Position.X.Scale, frame.Position.X.Offset, frame.Position.Y.Scale, newY)
-                        }):Play()
-                    end
-                end
-            end
         end
     end))
 end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Smart Collision Logic",
+    Desc = "Heaven HUD: Clamped Borders & Smooth FPS",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -114,7 +94,7 @@ return {
                 Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(wm, 6)
-            applyCollisionDrag(wm)
+            applyClampedDrag(wm)
 
             local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
@@ -136,7 +116,7 @@ return {
                 BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(sl, 10)
-            applyCollisionDrag(sl)
+            applyClampedDrag(sl)
             create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
             local list = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
             create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, list)
@@ -169,7 +149,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Collision System Active")
+            spawnNotify("Heaven", "Clamped borders enabled")
         end
 
         -- 4. FLOATING AD
