@@ -96,14 +96,13 @@ return {
         local playerGui = player:WaitForChild("PlayerGui")
         screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
 
-        -- 1. WATERMARK
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
                 Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(wm, 6)
-            applyScaleDrag(wm) -- Используем новый драг
+            applyScaleDrag(wm)
 
             local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
@@ -118,14 +117,13 @@ return {
             end))
         end
 
-        -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
                 BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(sl, 10)
-            applyScaleDrag(sl) -- Используем новый драг
+            applyScaleDrag(sl)
 
             create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
             local list = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
@@ -133,7 +131,6 @@ return {
             create("TextLabel", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found", TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = list })
         end
 
-        -- 3. NOTIFICATIONS
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0),
@@ -159,10 +156,11 @@ return {
                 end)
             end
 
+            ctx.Shared.Notify = spawnNotify
+
             spawnNotify("Heaven", "Drag Fix Applied")
         end
 
-        -- 4. FLOATING AD
         if ctx:GetSetting("DiscordAd") then
             local adLabel = create("TextLabel", { Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/heaven", TextColor3 = Theme.Text, TextTransparency = 0.6, Font = Enum.Font.GothamBold, TextSize = 10, Position = UDim2.fromOffset(200, 200), Parent = screenGui })
             local vel = Vector2.new(75, 75)
@@ -182,6 +180,7 @@ return {
     end,
 
     OnDisable = function(ctx)
+        ctx.Shared.Notify = nil
         for _, conn in ipairs(connections) do if conn then conn:Disconnect() end end
         for _, el in ipairs(elements) do if el then el:Destroy() end end
         connections, elements, screenGui = {}, {}, nil

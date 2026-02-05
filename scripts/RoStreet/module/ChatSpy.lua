@@ -12,9 +12,14 @@ return {
     OnEnable = function(ctx)
         GetStartState = TextChatService.ChatWindowConfiguration.Enabled
         TextChatService.ChatWindowConfiguration.Enabled = true
+
+        if ctx.Shared.Notify then
+            ctx.Shared.Notify("Module System", ctx.Name.." was enabled!")
+        end
     end,
 
     OnDisable = function(ctx)
         TextChatService.ChatWindowConfiguration.Enabled = GetStartState
+        ctx.Shared.Notify("Module System", ctx.Name.." was disabled!")
     end,
 }
