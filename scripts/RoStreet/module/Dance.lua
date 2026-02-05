@@ -12,7 +12,7 @@ local r15_dances = {
     ["Shuffle"] = "10714076981", ["Line"] = "10714392151", ["Pop"] = "11444443576",
     ["Floss"] = "10714340543", ["HeyMove"] = "119734573196374", ["BillyBounce"] = "133394554631338",
     ["TakeTheL"] = "117865821073911", ["Clouds"] = "99807821959066", ["Popular"] = "94292758607678",
-    ["Shake"] = "100795219530433"
+    ["Shake"] = "100795219530433", ["IWantMonkey"] = "104248876465825"
 }
 
 local function toggleWalkAnim(state)
@@ -60,7 +60,7 @@ return {
             Default = "Dance 1",
             Options = {"Dance 1", "Dance 2", "Tilt", "Joy", "Hyped", "Old School",
                        "Monkey", "Shuffle", "Line", "Pop", "Floss", "HeyMove", "BillyBounce",
-                       "TakeTheL", "Clouds", "Popular", "Shake"}
+                       "TakeTheL", "Clouds", "Popular", "Shake", "IWantMonkey"}
         },
         { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
