@@ -171,25 +171,11 @@ local function shoot(targetPlayer, ctx)
     if not head or not root then return end
 
     local predicted, predictedVisuals = head.Position, head.Position
-    local mode = ctx:GetSetting("Resolver Mode")
-    local pingBoost = ctx:GetSetting("Prediction Velocity")
     if ctx:GetSetting("Resolver") then
-        if mode == "Velocity" then
-            predicted = head.Position + (root.Velocity * pingBoost)
-        elseif mode == "True-Motion" then
-            local lastPos = lastPositions[targetPlayer.UserId]
-            if lastPos then
-                local deltaVelocity = (root.Position - lastPos) / task.wait()
-                predicted = head.Position + (deltaVelocity * pingBoost)
-            end
-            lastPositions[targetPlayer.UserId] = root.Position
-        elseif mode == "Flat-Track" then
-            local v = root.Velocity
-            predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
-        end
+        local v = root.Velocity
+        predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
     end
-
-
+    
     local muzzle
     if gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front") then
         muzzle = gun.Main.Front
@@ -251,8 +237,6 @@ return {
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Resolver", Default = false },
-        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Flat-Track", "True-Motion"} },
-        { Type = "Slider", Name = "Prediction Velocity", Default = 0.165, Min = 0.1, Max = 0.5, Step = 0.005 },
     },
 
     OnEnable = function(ctx)
