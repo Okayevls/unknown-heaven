@@ -149,6 +149,7 @@ local function updateLine()
 end
 
 local lastAmmoPerAmmoObject = {}
+local lastPositions = {}
 
 local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
@@ -168,13 +169,27 @@ local function shoot(targetPlayer, ctx)
     local root = char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
-    local predicted = head.Position
-    if ctx:GetSetting("Prediction") then
-        local velocity = root.Velocity
-        local pingBoost = ctx:GetSetting("Prediction Velocity")
+   --local predicted = head.Position
 
-        predicted = head.Position + (velocity * pingBoost)
+    local predicted = head.Position
+    local mode = ctx:GetSetting("Resolver Mode")
+
+    if ctx:GetSetting("Resolver") then
+        if mode == "Velocity" then
+            predicted = head.Position + (root.Velocity * ctx:GetSetting("Prediction Velocity"))
+        elseif mode == "Delta" then
+            local lastPos = lastPositions[targetPlayer.UserId]
+            if lastPos then
+                local deltaVelocity = (root.Position - lastPos) / task.wait()
+                predicted = head.Position + (deltaVelocity * ctx:GetSetting("Prediction Velocity"))
+            end
+            lastPositions[targetPlayer.UserId] = root.Position
+        elseif mode == "Smooth" then
+            local v = root.Velocity
+            predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
+        end
     end
+
 
     local muzzle
     if gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front") then
@@ -236,6 +251,8 @@ return {
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
+        { Type = "Boolean", Name = "Resolver", Default = false },
+        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Smooth", "Delta"} },
         { Type = "Boolean", Name = "Prediction", Default = true },
         { Type = "Slider", Name = "Prediction Velocity", Default = 0.165, Min = 0.1, Max = 0.5, Step = 0.005 },
     },
