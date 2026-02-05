@@ -15,7 +15,6 @@ local Theme = {
     Accent = Color3.fromRGB(140, 200, 255),
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
-    Error = Color3.fromRGB(255, 100, 100)
 }
 
 local function create(class, props, parent)
@@ -28,27 +27,12 @@ end
 
 local function applyStyle(obj, radius)
     create("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, obj)
-    local stroke = create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
-    return stroke
+    create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
-local function checkCollision(frame)
-    for _, el in ipairs(elements) do
-        if el:IsA("Frame") and el ~= frame and el.Visible and el.Name ~= "Ad" then
-            local p1, s1 = frame.AbsolutePosition, frame.AbsoluteSize
-            local p2, s2 = el.AbsolutePosition, el.AbsoluteSize
-
-            local overlap = (p1.X < p2.X + s2.X and p1.X + s1.X > p2.X and
-                    p1.Y < p2.Y + s2.Y and p1.Y + s1.Y > p2.Y)
-            if overlap then return true end
-        end
-    end
-    return false
-end
-
-local function applyAdvancedDrag(frame)
+-- Чистый Drag без багов с позиционированием
+local function applySimpleDrag(frame)
     local dragging, dragStart, startPos
-    local stroke = frame:FindFirstChildOfClass("UIStroke")
 
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -61,39 +45,24 @@ local function applyAdvancedDrag(frame)
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            local screen = screenGui.AbsoluteSize
-            local size = frame.AbsoluteSize
-
-            -- Рассчитываем позицию с учетом AnchorPoint
-            local ap = frame.AnchorPoint
-            local minX = 0 + (size.X * ap.X)
-            local maxX = screen.X - (size.X * (1 - ap.X))
-            local minY = 0 + (size.Y * ap.Y)
-            local maxY = screen.Y - (size.Y * (1 - ap.Y))
-
-            -- Теперь clamp работает корректно для любой точки привязки
-            local newX = math.clamp(startPos.X.Offset + delta.X, minX, maxX)
-            local newY = math.clamp(startPos.Y.Offset + delta.Y, minY, maxY)
-
-            frame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
-
-            if stroke then
-                stroke.Color = checkCollision(frame) and Theme.Error or Theme.Stroke
-            end
+            -- Используем только Offset для предотвращения багов с Scale на разных сторонах экрана
+            frame.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
         end
     end))
 
     table.insert(connections, UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            if stroke then stroke.Color = Theme.Stroke end
         end
     end))
 end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: No-Limit Dragging & Correct Clamping",
+    Desc = "Heaven HUD: Global Movement Fix",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -113,41 +82,45 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK
+        -- 1. WATERMARK (Центр, исправленный Drag)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 AnchorPoint = Vector2.new(0.5, 0),
-                Size = UDim2.fromOffset(260, 30),
-                Position = UDim2.new(0.5, 0, 0, 10), -- Поставил почти в самый верх
+                Size = UDim2.fromOffset(280, 30),
+                Position = UDim2.new(0.5, 0, 0, 8), -- Самый верх
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
             applyStyle(wm, 6)
-            applyAdvancedDrag(wm)
+            applySimpleDrag(wm)
 
-            create("TextLabel", {
+            local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  dev build",
+                Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  00:00:00",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 11,
                 Parent = wm
             })
+
+            table.insert(connections, RunService.Heartbeat:Connect(function()
+                textLabel.Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  " .. os.date("%H:%M:%S")
+            end))
         end
 
-        -- 2. STAFF LIST
+        -- 2. STAFF LIST (Ниже)
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, 60),
+                Position = UDim2.fromOffset(20, 85), -- Опустил еще ниже
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
             applyStyle(sl, 10)
-            applyAdvancedDrag(sl)
+            applySimpleDrag(sl)
 
             create("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 28),
@@ -177,12 +150,12 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS
+        -- 3. NOTIFICATIONS (В самом низу)
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
-                Size = UDim2.new(0, 260, 0.5, 0),
-                Position = UDim2.new(1, -280, 0.8, -50),
+                Size = UDim2.new(0, 260, 0.4, 0),
+                Position = UDim2.new(1, -280, 0.92, 0), -- Еще ниже к краю
                 AnchorPoint = Vector2.new(0, 1),
                 BackgroundTransparency = 1,
                 Parent = screenGui
@@ -226,7 +199,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Clamping fixed!")
+            spawnNotify("Heaven", "Movement Fixed Everywhere")
         end
 
         -- 4. FLOATING AD
@@ -243,21 +216,23 @@ return {
                 Parent = screenGui
             })
 
-            local vel = Vector2.new(60, 60)
+            local vel = Vector2.new(75, 75)
             local currentX, currentY = 200, 200
 
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
                 if not adLabel or not adLabel.Parent then return end
                 local screen = screenGui.AbsoluteSize
-                if screen.X == 0 then return end
-                local size = adLabel.AbsoluteSize
+                if screen.X <= 0 then return end
 
+                local size = adLabel.AbsoluteSize
                 currentX = currentX + (vel.X * dt)
                 currentY = currentY + (vel.Y * dt)
 
-                -- Теперь реклама летает по всей высоте экрана
-                if currentX <= 0 or currentX + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
-                if currentY <= 0 or currentY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
+                if currentX <= 0 then vel = Vector2.new(math.abs(vel.X), vel.Y) currentX = 0
+                elseif currentX + size.X >= screen.X then vel = Vector2.new(-math.abs(vel.X), vel.Y) currentX = screen.X - size.X end
+
+                if currentY <= 0 then vel = Vector2.new(vel.X, math.abs(vel.Y)) currentY = 0
+                elseif currentY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -math.abs(vel.Y)) currentY = screen.Y - size.Y end
 
                 adLabel.Position = UDim2.fromOffset(currentX, currentY)
             end))
