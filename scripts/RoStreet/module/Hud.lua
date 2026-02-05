@@ -66,8 +66,8 @@ return {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
         { Type = "Boolean", Name = "Notifications", Default = true },
-        { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 10, Step = 1 }, -- Настройка лимита
-        { Type = "DiscordAd", Name = "DiscordAd", Default = true },
+        { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 10, Step = 1 },
+        { Type = "Boolean", Name = "DiscordAd", Default = true },
     },
 
     OnEnable = function(ctx)
@@ -81,8 +81,16 @@ return {
             local textLabel = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Heaven • 00 FPS • 00:00", TextColor3 = Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm })
             local smoothedFps = 60
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                smoothedFps = smoothedFps + ((1/dt) - smoothedFps) * 0.015
-                textLabel.Text = string.format("Heaven  •  %d FPS  •  %s", math.round(smoothedFps), os.date("%H:%M"))
+                if dt > 0 then
+                    local currentFps = 1 / dt
+                    currentFps = math.clamp(currentFps, 0, 999)
+                    smoothedFps = smoothedFps + (currentFps - smoothedFps) * 0.015
+                end
+
+                local displayFps = math.floor(math.abs(smoothedFps))
+                local timeStr = os.date("%H:%M")
+
+                textLabel.Text = string.format("Heaven  •  %d FPS  •  %s", displayFps, timeStr)
             end))
         end
 
