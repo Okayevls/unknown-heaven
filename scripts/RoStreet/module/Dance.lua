@@ -6,11 +6,13 @@ local settingsConnection = nil
 local charAddedConnection = nil
 
 local r15_dances = {
-    ["Dance 1"] = "3333432454", ["Dance 2"] = "4555808220", ["Dance 3"] = "4049037604",
+    ["Dance 1"] = "4555808220", ["Dance 2"] = "4049037604",
     ["Tilt"] = "4555782893", ["Joy"] = "10214311282", ["Hyped"] = "10714010337",
     ["Old School"] = "10713981723", ["Monkey"] = "10714372526",
     ["Shuffle"] = "10714076981", ["Line"] = "10714392151", ["Pop"] = "11444443576",
-    ["Floss"] = "10714340543", ["HeyMove"] = "119734573196374", ["BillyBounce"] = "133394554631338"
+    ["Floss"] = "10714340543", ["HeyMove"] = "119734573196374", ["BillyBounce"] = "133394554631338",
+    ["TakeTheL"] = "117865821073911", ["Clouds"] = "99807821959066", ["Popular"] = "94292758607678",
+    ["Shake"] = "100795219530433"
 }
 
 local function toggleWalkAnim(state)
@@ -56,8 +58,9 @@ return {
             Type = "ModeSetting",
             Name = "Style",
             Default = "Dance 1",
-            Options = {"Dance 1", "Dance 2", "Dance 3", "Tilt", "Joy", "Hyped", "Old School",
-                       "Monkey", "Shuffle", "Line", "Pop", "Floss", "HeyMove", "BillyBounce"}
+            Options = {"Dance 1", "Dance 2", "Tilt", "Joy", "Hyped", "Old School",
+                       "Monkey", "Shuffle", "Line", "Pop", "Floss", "HeyMove", "BillyBounce",
+                       "TakeTheL", "Clouds", "Popular", "Shake"}
         },
         { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
