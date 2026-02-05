@@ -27,7 +27,7 @@ return {
     Category = "Movement",
 
     Settings = {
-        { Type = "Slider", Name = "MultiplierXYZ", Default = 1.5, Min = 0.1, Max = 500, Step = 0.05 },
+        { Type = "Slider", Name = "MultiplierXYZ", Default = 1.5, Min = 0.1, Max = 50, Step = 0.05 },
     },
 
     OnEnable = function(ctx)
