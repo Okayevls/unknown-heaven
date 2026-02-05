@@ -15,6 +15,7 @@ local Theme = {
     Accent = Color3.fromRGB(140, 200, 255),
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
+    Error = Color3.fromRGB(255, 100, 100) -- Для индикации коллизии
 }
 
 local SAFE_TOP = 55
@@ -29,11 +30,29 @@ end
 
 local function applyStyle(obj, radius)
     create("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, obj)
-    create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
+    local stroke = create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
+    return stroke
 end
 
-local function applyDrag(frame)
+-- Проверка коллизий между Rect
+local function checkCollision(frame)
+    for _, el in ipairs(elements) do
+        if el:IsA("Frame") and el ~= frame and el.Visible and el.Name ~= "Ad" then
+            local p1, s1 = frame.AbsolutePosition, frame.AbsoluteSize
+            local p2, s2 = el.AbsolutePosition, el.AbsoluteSize
+
+            local overlap = (p1.X < p2.X + s2.X and p1.X + s1.X > p2.X and
+                    p1.Y < p2.Y + s2.Y and p1.Y + s1.Y > p2.Y)
+            if overlap then return true end
+        end
+    end
+    return false
+end
+
+local function applyAdvancedDrag(frame)
     local dragging, dragStart, startPos
+    local stroke = frame:FindFirstChildOfClass("UIStroke")
+
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -41,20 +60,37 @@ local function applyDrag(frame)
             startPos = frame.Position
         end
     end))
+
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            local screen = screenGui.AbsoluteSize
+            local size = frame.AbsoluteSize
+
+            -- Clamping (Ограничение экраном)
+            local newX = math.clamp(startPos.X.Offset + delta.X, 0, screen.X - size.X)
+            local newY = math.clamp(startPos.Y.Offset + delta.Y, SAFE_TOP - 20, screen.Y - size.Y)
+
+            frame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
+
+            -- Визуализация коллизии
+            if stroke then
+                stroke.Color = checkCollision(frame) and Theme.Error or Theme.Stroke
+            end
         end
     end))
+
     table.insert(connections, UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            if stroke then stroke.Color = Theme.Stroke end
+        end
     end))
 end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Adjusted Positions",
+    Desc = "Heaven HUD: Advanced Dragging & Collision Warning",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -74,23 +110,23 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (Немного выше)
+        -- 1. WATERMARK (Максимально вверх)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 AnchorPoint = Vector2.new(0.5, 0),
                 Size = UDim2.fromOffset(260, 30),
-                Position = UDim2.new(0.5, 0, 0, SAFE_TOP - 5), -- Поднял
+                Position = UDim2.new(0.5, 0, 0, SAFE_TOP - 15), -- Поднял еще выше
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
             applyStyle(wm, 6)
-            applyDrag(wm)
+            applyAdvancedDrag(wm)
 
             create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  developer build",
+                Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  dev build",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 11,
@@ -98,17 +134,17 @@ return {
             })
         end
 
-        -- 2. STAFF LIST (Немного ниже)
+        -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, SAFE_TOP + 10), -- Опустил
+                Position = UDim2.fromOffset(20, SAFE_TOP + 10),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
             applyStyle(sl, 10)
-            applyDrag(sl)
+            applyAdvancedDrag(sl)
 
             create("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 28),
@@ -127,7 +163,6 @@ return {
                 Parent = sl
             })
             create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, list)
-
             create("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 20),
                 BackgroundTransparency = 1,
@@ -139,12 +174,12 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS (Немного ниже)
+        -- 3. NOTIFICATIONS (Опустил ниже)
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
                 Size = UDim2.new(0, 260, 0.5, 0),
-                Position = UDim2.new(1, -280, 0.8, -75), -- Опустил (было -100)
+                Position = UDim2.new(1, -280, 0.8, -50), -- Еще ниже
                 AnchorPoint = Vector2.new(0, 1),
                 BackgroundTransparency = 1,
                 Parent = screenGui
@@ -165,7 +200,6 @@ return {
                 applyStyle(n, 10)
 
                 create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
-
                 create("TextLabel", {
                     Text = title, Font = Enum.Font.GothamBold, TextSize = 13,
                     TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16),
@@ -189,7 +223,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Positions Updated")
+            spawnNotify("Heaven", "Collision system active")
         end
 
         -- 4. FLOATING AD
