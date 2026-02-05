@@ -82,7 +82,7 @@ return {
 
             local smoothedFps = 60
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                smoothedFps = smoothedFps + ((1/dt) - smoothedFps) * 0.05
+                smoothedFps = smoothedFps + ((1/dt) - smoothedFps) * 0.15
                 textLabel.Text = string.format("Heaven  •  %d FPS  •  %s", math.floor(smoothedFps), os.date("%H:%M"))
             end))
         end
