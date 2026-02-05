@@ -8,6 +8,7 @@ local screenGui = nil
 
 local elements = {}
 local connections = {}
+local activeNotifs = {}
 
 local Theme = {
     Panel = Color3.fromRGB(255, 255, 255),
@@ -30,58 +31,34 @@ local function applyStyle(obj, radius)
     create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
--- ФИНАЛЬНЫЙ ФИКС ДРАГА ЧЕРЕЗ SCALE (Никаких стен)
 local function applyScaleDrag(frame)
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-
+    local dragging, dragStart, startPos = false, nil, nil
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
+            dragging, dragStart, startPos = true, input.Position, frame.Position
         end
     end))
-
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             local screen = screenGui.AbsoluteSize
-
-            -- Переводим пиксели дельты в Scale (проценты экрана)
-            local deltaScaleX = delta.X / screen.X
-            local deltaScaleY = delta.Y / screen.Y
-
-            -- Считаем новые координаты в Scale
-            local newScaleX = startPos.X.Scale + deltaScaleX
-            local newScaleY = startPos.Y.Scale + deltaScaleY
-
-            -- Ограничиваем в пределах от 0 до 1 (весь экран)
-            -- С небольшим запасом на размер самой рамки (через AnchorPoint)
+            local deltaScaleX, deltaScaleY = delta.X / screen.X, delta.Y / screen.Y
+            local newScaleX, newScaleY = startPos.X.Scale + deltaScaleX, startPos.Y.Scale + deltaScaleY
             local offsetFromAnchorX = (frame.Size.X.Offset / screen.X) * frame.AnchorPoint.X
             local offsetFromAnchorY = (frame.Size.Y.Offset / screen.Y) * frame.AnchorPoint.Y
-
             local limitMaxX = 1 - ((frame.Size.X.Offset / screen.X) * (1 - frame.AnchorPoint.X))
             local limitMaxY = 1 - ((frame.Size.Y.Offset / screen.Y) * (1 - frame.AnchorPoint.Y))
-
-            frame.Position = UDim2.fromScale(
-                    math.clamp(newScaleX, offsetFromAnchorX, limitMaxX),
-                    math.clamp(newScaleY, offsetFromAnchorY, limitMaxY)
-            )
+            frame.Position = UDim2.fromScale(math.clamp(newScaleX, offsetFromAnchorX, limitMaxX), math.clamp(newScaleY, offsetFromAnchorY, limitMaxY))
         end
     end))
-
     table.insert(connections, UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end))
 end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Ultimate Scale-Based Drag Fix",
+    Desc = "Heaven HUD: Visuals with Notification Limit",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -89,27 +66,19 @@ return {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
         { Type = "Boolean", Name = "Notifications", Default = true },
-        { Type = "Boolean", Name = "DiscordAd", Default = true },
+        { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 10, Step = 1 }, -- Настройка лимита
+        { Type = "DiscordAd", Name = "DiscordAd", Default = true },
     },
 
     OnEnable = function(ctx)
         local playerGui = player:WaitForChild("PlayerGui")
         screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
+        activeNotifs = {}
 
         if ctx:GetSetting("Watermark") then
-            local wm = create("Frame", {
-                Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
-                Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui
-            })
-            applyStyle(wm, 6)
-            applyScaleDrag(wm)
-
-            local textLabel = create("TextLabel", {
-                Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
-                Text = "Heaven  •  00 FPS  •  00:00", TextColor3 = Theme.Text,
-                Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm
-            })
-
+            local wm = create("Frame", { Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30), Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui })
+            applyStyle(wm, 6); applyScaleDrag(wm)
+            local textLabel = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Heaven • 00 FPS • 00:00", TextColor3 = Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm })
             local smoothedFps = 60
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
                 smoothedFps = smoothedFps + ((1/dt) - smoothedFps) * 0.015
@@ -118,13 +87,8 @@ return {
         end
 
         if ctx:GetSetting("StaffList") then
-            local sl = create("Frame", {
-                Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
-                BackgroundColor3 = Theme.Panel, Parent = screenGui
-            })
-            applyStyle(sl, 10)
-            applyScaleDrag(sl)
-
+            local sl = create("Frame", { Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85), BackgroundColor3 = Theme.Panel, Parent = screenGui })
+            applyStyle(sl, 10); applyScaleDrag(sl)
             create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
             local list = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
             create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, list)
@@ -132,24 +96,35 @@ return {
         end
 
         if ctx:GetSetting("Notifications") then
-            local notifyArea = create("Frame", {
-                Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0),
-                Position = UDim2.new(1, -280, 0.92, 0), AnchorPoint = Vector2.new(0, 1),
-                BackgroundTransparency = 1, Parent = screenGui
-            })
+            local notifyArea = create("Frame", { Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0), Position = UDim2.new(1, -280, 0.92, 0), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, Parent = screenGui })
             create("UIListLayout", { VerticalAlignment = Enum.VerticalAlignment.Bottom, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, notifyArea)
 
             local function spawnNotify(title, msg)
-                local n = create("Frame", { Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = Theme.Panel, ClipsDescendants = true, Parent = notifyArea })
+                local max = ctx:GetSetting("MaxNotifications") or 5
+
+                if #activeNotifs >= max then
+                    local oldest = table.remove(activeNotifs, 1)
+                    if oldest and oldest.Parent then
+                        oldest:Destroy()
+                    end
+                end
+
+                local n = create("Frame", { Name = "Notification", Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = Theme.Panel, ClipsDescendants = true, Parent = notifyArea })
                 applyStyle(n, 10)
                 create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
                 create("TextLabel", { Text = title, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
                 create("TextLabel", { Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
 
+                table.insert(activeNotifs, n)
+
                 n.Size = UDim2.new(1, 0, 0, 0)
                 TweenService:Create(n, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 54)}):Play()
+
                 task.delay(4, function()
                     if not n or not n.Parent then return end
+                    local idx = table.find(activeNotifs, n)
+                    if idx then table.remove(activeNotifs, idx) end
+
                     local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
                     tw:Play()
                     tw.Completed:Connect(function() n:Destroy() end)
@@ -157,8 +132,7 @@ return {
             end
 
             ctx.Shared.Notify = spawnNotify
-
-            spawnNotify("Heaven", "Drag Fix Applied")
+            spawnNotify("Heaven", "Notifications Limited to " .. ctx:GetSetting("MaxNotifications"))
         end
 
         if ctx:GetSetting("DiscordAd") then
@@ -183,6 +157,7 @@ return {
         ctx.Shared.Notify = nil
         for _, conn in ipairs(connections) do if conn then conn:Disconnect() end end
         for _, el in ipairs(elements) do if el then el:Destroy() end end
+        activeNotifs = {}
         connections, elements, screenGui = {}, {}, nil
     end,
 }
