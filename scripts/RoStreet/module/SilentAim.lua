@@ -170,7 +170,7 @@ local function shoot(targetPlayer, ctx)
     local root = char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
-    local predicted = head.Position
+    local predicted, predictedVisuals = head.Position, head.Position
     local mode = ctx:GetSetting("Resolver Mode")
     local pingBoost = ctx:GetSetting("Prediction Velocity")
     if ctx:GetSetting("Resolver") then
@@ -214,7 +214,7 @@ local function shoot(targetPlayer, ctx)
                 if attach and attach.Parent then attach:Destroy() end
             end)
         end
-        create3DTracer(attach, predicted)
+        create3DTracer(attach, predictedVisuals)
     end
 end
 
