@@ -4,13 +4,12 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
-
--- Локальные переменные для работы внутри сессии модуля
 local screenGui = nil
-local connections = {}
-local elements = {}
 
--- [ Внутренние утилиты для соблюдения Heaven Style ] --
+local elements = {}
+local connections = {}
+
+-- [ Настройки дизайна ] --
 local Theme = {
     Panel = Color3.fromRGB(255, 255, 255),
     Stroke = Color3.fromRGB(210, 225, 245),
@@ -18,6 +17,9 @@ local Theme = {
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
 }
+
+-- Константа отступа от верхнего бара Roblox
+local TOP_OFFSET = 45
 
 local function create(class, props, parent)
     local obj = Instance.new(class)
@@ -52,29 +54,34 @@ local function applyDrag(frame)
     end))
 end
 
--- [ Сам Модуль ] --
 return {
     Name = "Hud",
-    Desc = "Отображает визуальный интерфейс (Watermark, StaffList, Ad)",
+    Desc = "Visual Interface with SafeZones (Watermark, Staff, Notify, Ad)",
     Class = "Visuals",
     Category = "Visuals",
 
     Settings = {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
+        { Type = "Boolean", Name = "Notifications", Default = true },
         { Type = "Boolean", Name = "DiscordAd", Default = true },
     },
 
     OnEnable = function(ctx)
         local playerGui = player:WaitForChild("PlayerGui")
-        screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true }, playerGui)
+        screenGui = create("ScreenGui", {
+            Name = "HeavenHud",
+            ResetOnSpawn = false,
+            IgnoreGuiInset = true,
+            DisplayOrder = 100
+        }, playerGui)
 
-        -- 1. Watermark
+        -- 1. WATERMARK (С учетом TopBar)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 Size = UDim2.fromOffset(200, 32),
-                Position = UDim2.fromOffset(20, 20),
+                Position = UDim2.fromOffset(20, TOP_OFFSET),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -93,12 +100,12 @@ return {
             })
         end
 
-        -- 2. Staff List
+        -- 2. STAFF LIST (Ниже ватермарки)
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, 65),
+                Position = UDim2.fromOffset(20, TOP_OFFSET + 45),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -134,12 +141,65 @@ return {
             })
         end
 
-        -- 3. Floating Discord Ad
+        -- 3. NOTIFICATIONS SYSTEM
+        if ctx:GetSetting("Notifications") then
+            local notifyArea = create("Frame", {
+                Name = "NotifyArea",
+                Size = UDim2.new(0, 260, 1, -TOP_OFFSET),
+                Position = UDim2.new(1, -280, 0, TOP_OFFSET),
+                BackgroundTransparency = 1,
+                Parent = screenGui
+            })
+            create("UIListLayout", {
+                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                Padding = UDim.new(0, 8),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }, notifyArea)
+
+            local function spawnNotify(title, msg)
+                local n = create("Frame", {
+                    Size = UDim2.new(1, 0, 0, 54),
+                    BackgroundColor3 = Theme.Panel,
+                    ClipsDescendants = true,
+                    Parent = notifyArea
+                })
+                applyStyle(n, 10)
+
+                create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
+
+                create("TextLabel", {
+                    Text = title, Font = Enum.Font.GothamBold, TextSize = 13,
+                    TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16),
+                    TextXAlignment = 0, BackgroundTransparency = 1, Parent = n
+                })
+                create("TextLabel", {
+                    Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11,
+                    TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18),
+                    Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0,
+                    BackgroundTransparency = 1, Parent = n
+                })
+
+                n.Size = UDim2.new(1, 0, 0, 0)
+                TweenService:Create(n, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 54)}):Play()
+
+                task.delay(4, function()
+                    if not n or not n.Parent then return end
+                    local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
+                    tw:Play()
+                    tw.Completed:Connect(function() n:Destroy() end)
+                end)
+            end
+
+            spawnNotify("Heaven Hud", "Successfully initialized visuals")
+        end
+
+        -- 4. FLOATING AD (DVD BOUNCE)
         if ctx:GetSetting("DiscordAd") then
             local ad = create("Frame", {
                 Size = UDim2.fromOffset(150, 24),
                 BackgroundColor3 = Theme.Panel,
                 BackgroundTransparency = 0.85,
+                Position = UDim2.fromScale(0.5, 0.5),
                 Parent = screenGui
             })
             applyStyle(ad, 6)
@@ -155,34 +215,37 @@ return {
                 Parent = ad
             })
 
-            local vel = Vector2.new(65, 65)
+            local vel = Vector2.new(75, 75)
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                if not ad.Parent then return end
-                local pos = ad.AbsolutePosition
-                local size = ad.AbsoluteSize
+                if not ad.Parent or not screenGui then return end
+
                 local screen = screenGui.AbsoluteSize
+                local size = ad.AbsoluteSize
 
-                if pos.X <= 0 or pos.X + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
-                if pos.Y <= 0 or pos.Y + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
+                -- Рассчитываем новую позицию через Offset для точности
+                local curX = ad.Position.X.Offset
+                local curY = ad.Position.Y.Offset
 
-                ad.Position = UDim2.fromOffset(pos.X + vel.X * dt, pos.Y + vel.Y * dt)
+                local nextX = curX + (vel.X * dt)
+                local nextY = curY + (vel.Y * dt)
+
+                -- Границы с учетом TopBar сверху
+                if nextX <= 0 or nextX + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
+                if nextY <= TOP_OFFSET or nextY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
+
+                ad.Position = UDim2.fromOffset(
+                        math.clamp(nextX, 0, screen.X - size.X),
+                        math.clamp(nextY, TOP_OFFSET, screen.Y - size.Y)
+                )
             end))
         end
     end,
 
     OnDisable = function(ctx)
-        -- Отключаем все RenderStepped и Dragging события
-        for _, conn in ipairs(connections) do
-            if conn then conn:Disconnect() end
-        end
+        for _, conn in ipairs(connections) do if conn then conn:Disconnect() end end
+        for _, el in ipairs(elements) do if el then el:Destroy() end end
         connections = {}
-
-        -- Удаляем все созданные UI элементы
-        for _, el in ipairs(elements) do
-            if el then el:Destroy() end
-        end
         elements = {}
-
         screenGui = nil
     end,
 }
