@@ -30,16 +30,17 @@ local function applyStyle(obj, radius)
     create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
--- ФИНАЛЬНЫЙ ФИКС ДРАГА: Теперь работает по всему экрану
-local function applyClampedDrag(frame)
-    local dragging, dragStart, startPos
+-- ФИНАЛЬНЫЙ ФИКС ДРАГА ЧЕРЕЗ SCALE (Никаких стен)
+local function applyScaleDrag(frame)
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
 
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            -- Запоминаем текущий Offset, чтобы от него плясать
-            startPos = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
+            startPos = frame.Position
         end
     end))
 
@@ -47,23 +48,27 @@ local function applyClampedDrag(frame)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             local screen = screenGui.AbsoluteSize
-            local size = frame.AbsoluteSize
 
-            -- Вычисляем позицию верхнего левого угла относительно AnchorPoint
-            -- Это позволяет нам игнорировать AnchorPoint (0.5 или 0 — не важно)
-            local centerXOffset = size.X * frame.AnchorPoint.X
-            local centerYOffset = size.Y * frame.AnchorPoint.Y
+            -- Переводим пиксели дельты в Scale (проценты экрана)
+            local deltaScaleX = delta.X / screen.X
+            local deltaScaleY = delta.Y / screen.Y
 
-            -- Новые координаты (Offset)
-            local targetX = startPos.X + delta.X
-            local targetY = startPos.Y + delta.Y
+            -- Считаем новые координаты в Scale
+            local newScaleX = startPos.X.Scale + deltaScaleX
+            local newScaleY = startPos.Y.Scale + deltaScaleY
 
-            -- Ограничение: Левый край | Правый край
-            local clampedX = math.clamp(targetX, centerXOffset, screen.X - (size.X - centerXOffset))
-            -- Ограничение: Верхний край | Нижний край
-            local clampedY = math.clamp(targetY, centerYOffset, screen.Y - (size.Y - centerYOffset))
+            -- Ограничиваем в пределах от 0 до 1 (весь экран)
+            -- С небольшим запасом на размер самой рамки (через AnchorPoint)
+            local offsetFromAnchorX = (frame.Size.X.Offset / screen.X) * frame.AnchorPoint.X
+            local offsetFromAnchorY = (frame.Size.Y.Offset / screen.Y) * frame.AnchorPoint.Y
 
-            frame.Position = UDim2.new(frame.Position.X.Scale, clampedX, frame.Position.Y.Scale, clampedY)
+            local limitMaxX = 1 - ((frame.Size.X.Offset / screen.X) * (1 - frame.AnchorPoint.X))
+            local limitMaxY = 1 - ((frame.Size.Y.Offset / screen.Y) * (1 - frame.AnchorPoint.Y))
+
+            frame.Position = UDim2.fromScale(
+                    math.clamp(newScaleX, offsetFromAnchorX, limitMaxX),
+                    math.clamp(newScaleY, offsetFromAnchorY, limitMaxY)
+            )
         end
     end))
 
@@ -76,7 +81,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Fixed Clamping & Movement",
+    Desc = "Heaven HUD: Ultimate Scale-Based Drag Fix",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -91,14 +96,14 @@ return {
         local playerGui = player:WaitForChild("PlayerGui")
         screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
 
-        -- 1. WATERMARK (Центрированная, но теперь полностью мобильная)
+        -- 1. WATERMARK
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
                 Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(wm, 6)
-            applyClampedDrag(wm)
+            applyScaleDrag(wm) -- Используем новый драг
 
             local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1,
@@ -116,11 +121,12 @@ return {
         -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
-                Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.fromOffset(20, 85),
+                Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
                 BackgroundColor3 = Theme.Panel, Parent = screenGui
             })
             applyStyle(sl, 10)
-            applyClampedDrag(sl)
+            applyScaleDrag(sl) -- Используем новый драг
+
             create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
             local list = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
             create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, list)
@@ -153,7 +159,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Anchor-aware clamping fixed!")
+            spawnNotify("Heaven", "Drag Fix Applied")
         end
 
         -- 4. FLOATING AD
