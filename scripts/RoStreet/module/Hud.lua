@@ -30,7 +30,6 @@ local function applyStyle(obj, radius)
     create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
--- Чистый Drag без багов с позиционированием
 local function applySimpleDrag(frame)
     local dragging, dragStart, startPos
 
@@ -45,7 +44,6 @@ local function applySimpleDrag(frame)
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            -- Используем только Offset для предотвращения багов с Scale на разных сторонах экрана
             frame.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
                     startPos.Y.Scale, startPos.Y.Offset + delta.Y
@@ -62,7 +60,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Global Movement Fix",
+    Desc = "Heaven HUD: FPS & Time (No Seconds)",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -82,13 +80,13 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (Центр, исправленный Drag)
+        -- 1. WATERMARK (Heaven | FPS | Time)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 AnchorPoint = Vector2.new(0.5, 0),
                 Size = UDim2.fromOffset(280, 30),
-                Position = UDim2.new(0.5, 0, 0, 8), -- Самый верх
+                Position = UDim2.new(0.5, 0, 0, 8),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -98,24 +96,28 @@ return {
             local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  00:00:00",
+                Text = "HEAVEN  •  00 FPS  •  00:00",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 11,
                 Parent = wm
             })
 
-            table.insert(connections, RunService.Heartbeat:Connect(function()
-                textLabel.Text = "HEAVEN  •  " .. player.Name:lower() .. "  •  " .. os.date("%H:%M:%S")
+            -- Логика FPS и Времени
+            local fps = 0
+            table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+                fps = math.floor(1 / dt)
+                local timeStr = os.date("%H:%M")
+                textLabel.Text = string.format("HEAVEN  •  %d FPS  •  %s", fps, timeStr)
             end))
         end
 
-        -- 2. STAFF LIST (Ниже)
+        -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, 85), -- Опустил еще ниже
+                Position = UDim2.fromOffset(20, 85),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -150,12 +152,12 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS (В самом низу)
+        -- 3. NOTIFICATIONS
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
                 Size = UDim2.new(0, 260, 0.4, 0),
-                Position = UDim2.new(1, -280, 0.92, 0), -- Еще ниже к краю
+                Position = UDim2.new(1, -280, 0.92, 0),
                 AnchorPoint = Vector2.new(0, 1),
                 BackgroundTransparency = 1,
                 Parent = screenGui
@@ -199,7 +201,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Movement Fixed Everywhere")
+            spawnNotify("Heaven", "FPS Meter Enabled")
         end
 
         -- 4. FLOATING AD
