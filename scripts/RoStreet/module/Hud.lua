@@ -60,7 +60,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: FPS & Time (No Seconds)",
+    Desc = "Heaven HUD: Smooth FPS & Case Fix",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -80,7 +80,7 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (Heaven | FPS | Time)
+        -- 1. WATERMARK (Heaven | Smooth FPS | Time)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
@@ -96,19 +96,22 @@ return {
             local textLabel = create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "HEAVEN  •  00 FPS  •  00:00",
+                Text = "Heaven  •  00 FPS  •  00:00",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 11,
                 Parent = wm
             })
 
-            -- Логика FPS и Времени
-            local fps = 0
+            -- Логика Smooth FPS (Lerp)
+            local smoothedFps = 60
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                fps = math.floor(1 / dt)
+                local currentFps = 1 / dt
+                -- Коэффициент 0.05 дает очень мягкое изменение
+                smoothedFps = smoothedFps + (currentFps - smoothedFps) * 0.05
+
                 local timeStr = os.date("%H:%M")
-                textLabel.Text = string.format("HEAVEN  •  %d FPS  •  %s", fps, timeStr)
+                textLabel.Text = string.format("Heaven  •  %d FPS  •  %s", math.floor(smoothedFps), timeStr)
             end))
         end
 
@@ -201,7 +204,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "FPS Meter Enabled")
+            spawnNotify("Heaven", "Visuals ready")
         end
 
         -- 4. FLOATING AD
