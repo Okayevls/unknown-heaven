@@ -176,33 +176,14 @@ local function shoot(targetPlayer, ctx)
     if ctx:GetSetting("Resolver") then
         if mode == "Velocity" then
             predicted = head.Position + (root.Velocity * pingBoost)
-        elseif mode == "Delta" then
+        elseif mode == "True-Motion" then
             local lastPos = lastPositions[targetPlayer.UserId]
             if lastPos then
                 local deltaVelocity = (root.Position - lastPos) / task.wait()
                 predicted = head.Position + (deltaVelocity * pingBoost)
             end
             lastPositions[targetPlayer.UserId] = root.Position
-        elseif mode == "Smart" then
-            local userId = targetPlayer.UserId
-            local currentPos = root.Position
-            local currentTime = tick()
-
-            if not targetHistory[userId] then
-                targetHistory[userId] = { pos = currentPos, time = currentTime }
-            end
-            
-            local history = targetHistory[userId]
-            local timeDiff = currentTime - history.time
-            local realVelocity = (currentPos - history.pos) / (timeDiff > 0 and timeDiff or 0.01)
-
-            if root.Velocity.Magnitude < 5 and realVelocity.Magnitude > 10 then
-                predicted = head.Position + (realVelocity * pingBoost)
-            else
-                predicted = head.Position + (root.Velocity * pingBoost)
-            end
-            targetHistory[userId] = { pos = currentPos, time = currentTime }
-        elseif mode == "Smooth" then
+        elseif mode == "Flat-Track" then
             local v = root.Velocity
             predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
         end
@@ -270,8 +251,7 @@ return {
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Resolver", Default = false },
-        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Smooth", "Delta", "Smart"} },
-        { Type = "Boolean", Name = "Prediction", Default = true },
+        { Type = "ModeSetting", Name = "Resolver Mode", Default = "Velocity", Options = {"Velocity", "Flat-Track", "True-Motion"} },
         { Type = "Slider", Name = "Prediction Velocity", Default = 0.165, Min = 0.1, Max = 0.5, Step = 0.005 },
     },
 
