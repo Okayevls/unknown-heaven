@@ -385,6 +385,12 @@ st.Enabled = newValue
 
 -- callbacks (безопасно)
 local ctx = makeCtx(self, categoryName, moduleName)
+
+if GlobalSharedStorage.Notify then
+local statusText = if newValue then "Enabled" else "Disabled"
+GlobalSharedStorage.Notify(st.Definition.Name, statusText)
+end
+
 if newValue then
 local f = st.Definition.OnEnable
 if f then
