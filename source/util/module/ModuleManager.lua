@@ -4,20 +4,13 @@ export type Bind =
 { kind: "KeyCode", code: Enum.KeyCode }
         | { kind: "UserInputType", code: Enum.UserInputType }
 
---export type SettingDef =
---    { Type: "Boolean", Name: string, Default: boolean? }
---    | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
---    | { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
---    | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
---    | { Type: "BindSetting", Name: string, Default: Bind? }
---    | { Type: "String", Name: string, Default: string? }
 export type SettingDef =
-      { Type: "Boolean", Name: string, Default: boolean?, Visible: ((ctx: ModuleCtx) -> boolean)? }
-      | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number?, Visible: ((ctx: ModuleCtx) -> boolean)? }
-      | { Type: "ModeSetting", Name: string, Default: string?, Options: { string }, Visible: ((ctx: ModuleCtx) -> boolean)? }
-      | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }?, Visible: ((ctx: ModuleCtx) -> boolean)? }
-      | { Type: "BindSetting", Name: string, Default: Bind?, Visible: ((ctx: ModuleCtx) -> boolean)? }
-      | { Type: "String", Name: string, Default: string?, Visible: ((ctx: ModuleCtx) -> boolean)? }
+    { Type: "Boolean", Name: string, Default: boolean? }
+    | { Type: "Slider", Name: string, Default: number?, Min: number, Max: number, Step: number? }
+    | { Type: "ModeSetting", Name: string, Default: string?, Options: { string } }
+    | { Type: "MultiBoolean", Name: string, Default: { [string]: boolean }? }
+    | { Type: "BindSetting", Name: string, Default: Bind? }
+    | { Type: "String", Name: string, Default: string? }
 
 export type ModuleCtx = {
    Category: string,
@@ -68,21 +61,20 @@ ModuleManager.__index = ModuleManager
 -- ========= utils =========
 
 local function deepCopy(v: any): any
-   if type(v) ~= "table" then
-      return v
-   end
-   local out = {}
-   for k, vv in pairs(v :: any) do
-      out[k] = deepCopy(vv)
-   end
-
-   return out
+if type(v) ~= "table" then
+return v
+end
+local out = {}
+for k, vv in pairs(v :: any) do
+out[k] = deepCopy(vv)
+end
+return out
 end
 
 local function clamp(n: number, mn: number, mx: number): number
-    if n < mn then return mn end
-    if n > mx then return mx end
-    return n
+if n < mn then return mn end
+if n > mx then return mx end
+return n
 end
 
 local function roundToStep(v: number, mn: number, step: number): number
@@ -208,11 +200,11 @@ export type ModuleManager = {
 }
 
 function ModuleManager.new(): ModuleManager
-   local self = setmetatable({}, ModuleManager) :: any
-   (self :: any)._categories = {} :: CategoryMap
-   (self :: any)._ChangedEvent = Instance.new("BindableEvent") :: BindableEvent
-   (self :: any).Changed = ((self :: any)._ChangedEvent.Event) :: RBXScriptSignal
-   return (self :: any) :: ModuleManager
+local self = setmetatable({}, ModuleManager) :: any
+(self :: any)._categories = {} :: CategoryMap
+(self :: any)._ChangedEvent = Instance.new("BindableEvent") :: BindableEvent
+(self :: any).Changed = ((self :: any)._ChangedEvent.Event) :: RBXScriptSignal
+return (self :: any) :: ModuleManager
 end
 
 
@@ -251,15 +243,6 @@ local function makeCtx(mgr: ModuleManager, categoryName: string, moduleName: str
             end
             return nil
          end,
-
-         GetVisible = function(self: ModuleCtx, settingName: string): boolean
-            local sDef = self:GetSettingData(settingName)
-            if sDef and typeof(sDef.Visible) == "function" then
-               local ok, res = pcall(sDef.Visible, self)
-               return if ok then res else true
-            end
-            return true
-         end
     }
     return ctx
 end
@@ -296,13 +279,16 @@ task.defer(function()
 self:SetEnabled(categoryName, def.Name, true)
 end)
 end
+
+-- (опционально) удалять лишние настройки не будем (чтобы не терять данные)
+
 else
 local settings = buildDefaultSettings(def.Settings or {})
-     cat[def.Name] = {
-     Enabled = false,
-     Bind = (def :: any).Bind or nil,
-     Settings = settings,
-     Definition = def,
+cat[def.Name] = {
+Enabled = false,
+Bind = (def :: any).Bind or nil,
+Settings = settings,
+Definition = def,
 }
 
 self._ChangedEvent:Fire({
@@ -430,10 +416,6 @@ function ModuleManager:Toggle(categoryName: string, moduleName: string)
 local st = self:GetState(categoryName, moduleName)
 if not st then return end
 self:SetEnabled(categoryName, moduleName, not st.Enabled)
-end
-
-function ModuleManager:GetCtx(categoryName: string, moduleName: string): ModuleCtx
-   return makeCtx(self, categoryName, moduleName)
 end
 
 local function validateBind(bind: Bind?): boolean

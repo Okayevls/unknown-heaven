@@ -928,17 +928,13 @@ local function renderSettings(tab, moduleName)
     local st = moduleMgr:GetState(tab, moduleName)
     if not st then return end
 
-    local moduleCtx = moduleMgr:GetCtx(tab, moduleName)
-
     for _, sDef in ipairs(st.Definition.Settings) do
-        if moduleCtx:GetVisible(sDef.Name) then
-            if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "BindSetting" then addBindSettingRow(tab, moduleName, sDef)
-            elseif sDef.Type == "String" then addStringSetting(tab, moduleName, sDef)
-            elseif sDef.Type == "ModeSetting" then addModeSetting(tab, moduleName, sDef)
-            end
+        if sDef.Type == "Boolean" then addBooleanSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "Slider" then addSliderSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "MultiBoolean" then addMultiBooleanSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "BindSetting" then addBindSettingRow(tab, moduleName, sDef)
+        elseif sDef.Type == "String" then addStringSetting(tab, moduleName, sDef)
+        elseif sDef.Type == "ModeSetting" then addModeSetting(tab, moduleName, sDef)
         end
     end
 end
@@ -1593,22 +1589,6 @@ moduleMgr.Changed:Connect(function(payload)
         rebuildBindMap()
         local rf = UIRefreshBind[payload.category] and UIRefreshBind[payload.category][payload.moduleName]
         if rf then rf() end
-        return
-    end
-
-    if payload.kind == "Setting" then
-        if currentSettings and currentSettings.tab == payload.category and currentSettings.module == payload.moduleName then
-            local ctx = moduleMgr:GetCtx(payload.category, payload.moduleName)
-            local sDef = ctx:GetSettingData(payload.key)
-            
-            if sDef and (sDef.Type == "Boolean" or sDef.Type == "ModeSetting") then
-                task.defer(function()
-                    if currentSettings and currentSettings.module == payload.moduleName then
-                        renderSettings(payload.category, payload.moduleName)
-                    end
-                end)
-            end
-        end
         return
     end
 end)
