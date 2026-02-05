@@ -1598,11 +1598,16 @@ moduleMgr.Changed:Connect(function(payload)
 
     if payload.kind == "Setting" then
         if currentSettings and currentSettings.tab == payload.category and currentSettings.module == payload.moduleName then
-            task.defer(function()
-                if currentSettings and currentSettings.module == payload.moduleName then
-                    renderSettings(payload.category, payload.moduleName)
-                end
-            end)
+            local ctx = moduleMgr:GetCtx(payload.category, payload.moduleName)
+            local sDef = ctx:GetSettingData(payload.key)
+            
+            if sDef and (sDef.Type == "Boolean" or sDef.Type == "ModeSetting") then
+                task.defer(function()
+                    if currentSettings and currentSettings.module == payload.moduleName then
+                        renderSettings(payload.category, payload.moduleName)
+                    end
+                end)
+            end
         end
         return
     end
