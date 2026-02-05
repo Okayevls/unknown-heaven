@@ -150,7 +150,7 @@ end
 
 local lastAmmoPerAmmoObject = {}
 
-local function shoot(targetPlayer)
+local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
     if not gun then return end
 
@@ -169,6 +169,12 @@ local function shoot(targetPlayer)
     if not head or not root then return end
 
     local predicted = head.Position
+    if ctx:GetSetting("Prediction") then
+        local velocity = root.Velocity
+        local pingBoost = ctx:GetSetting("Prediction Velocity")
+
+        predicted = head.Position + (velocity * pingBoost)
+    end
 
     local muzzle
     if gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front") then
@@ -178,6 +184,7 @@ local function shoot(targetPlayer)
     end
 
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
+
     if ammo.Value == lastAmmoPerAmmoObject[ammo] then
         return
     end
@@ -229,6 +236,8 @@ return {
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
+        { Type = "Boolean", Name = "Prediction", Default = true },
+        { Type = "Slider", Name = "Prediction Velocity", Default = 0.165, Min = 0.1, Max = 0.5, Step = 0.005 },
     },
 
     OnEnable = function(ctx)
@@ -270,7 +279,7 @@ return {
 
             local target = selectedTarget ~= nil and selectedTarget or randomTarget
             if isShooting and (randomTarget or selectedTarget) then
-                shoot(target)
+                shoot(target, ctx)
             end
 
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
