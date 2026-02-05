@@ -15,10 +15,8 @@ local Theme = {
     Accent = Color3.fromRGB(140, 200, 255),
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
-    Error = Color3.fromRGB(255, 100, 100) -- Для индикации коллизии
+    Error = Color3.fromRGB(255, 100, 100)
 }
-
-local SAFE_TOP = 55
 
 local function create(class, props, parent)
     local obj = Instance.new(class)
@@ -34,7 +32,6 @@ local function applyStyle(obj, radius)
     return stroke
 end
 
--- Проверка коллизий между Rect
 local function checkCollision(frame)
     for _, el in ipairs(elements) do
         if el:IsA("Frame") and el ~= frame and el.Visible and el.Name ~= "Ad" then
@@ -67,13 +64,19 @@ local function applyAdvancedDrag(frame)
             local screen = screenGui.AbsoluteSize
             local size = frame.AbsoluteSize
 
-            -- Clamping (Ограничение экраном)
-            local newX = math.clamp(startPos.X.Offset + delta.X, 0, screen.X - size.X)
-            local newY = math.clamp(startPos.Y.Offset + delta.Y, SAFE_TOP - 20, screen.Y - size.Y)
+            -- Рассчитываем позицию с учетом AnchorPoint
+            local ap = frame.AnchorPoint
+            local minX = 0 + (size.X * ap.X)
+            local maxX = screen.X - (size.X * (1 - ap.X))
+            local minY = 0 + (size.Y * ap.Y)
+            local maxY = screen.Y - (size.Y * (1 - ap.Y))
+
+            -- Теперь clamp работает корректно для любой точки привязки
+            local newX = math.clamp(startPos.X.Offset + delta.X, minX, maxX)
+            local newY = math.clamp(startPos.Y.Offset + delta.Y, minY, maxY)
 
             frame.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
 
-            -- Визуализация коллизии
             if stroke then
                 stroke.Color = checkCollision(frame) and Theme.Error or Theme.Stroke
             end
@@ -90,7 +93,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Advanced Dragging & Collision Warning",
+    Desc = "Heaven HUD: No-Limit Dragging & Correct Clamping",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -110,13 +113,13 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (Максимально вверх)
+        -- 1. WATERMARK
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
                 AnchorPoint = Vector2.new(0.5, 0),
                 Size = UDim2.fromOffset(260, 30),
-                Position = UDim2.new(0.5, 0, 0, SAFE_TOP - 15), -- Поднял еще выше
+                Position = UDim2.new(0.5, 0, 0, 10), -- Поставил почти в самый верх
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -139,7 +142,7 @@ return {
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, SAFE_TOP + 10),
+                Position = UDim2.fromOffset(20, 60),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -174,12 +177,12 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS (Опустил ниже)
+        -- 3. NOTIFICATIONS
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
                 Size = UDim2.new(0, 260, 0.5, 0),
-                Position = UDim2.new(1, -280, 0.8, -50), -- Еще ниже
+                Position = UDim2.new(1, -280, 0.8, -50),
                 AnchorPoint = Vector2.new(0, 1),
                 BackgroundTransparency = 1,
                 Parent = screenGui
@@ -223,7 +226,7 @@ return {
                 end)
             end
 
-            spawnNotify("Heaven", "Collision system active")
+            spawnNotify("Heaven", "Clamping fixed!")
         end
 
         -- 4. FLOATING AD
@@ -252,8 +255,9 @@ return {
                 currentX = currentX + (vel.X * dt)
                 currentY = currentY + (vel.Y * dt)
 
+                -- Теперь реклама летает по всей высоте экрана
                 if currentX <= 0 or currentX + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
-                if currentY <= SAFE_TOP or currentY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
+                if currentY <= 0 or currentY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
 
                 adLabel.Position = UDim2.fromOffset(currentX, currentY)
             end))
