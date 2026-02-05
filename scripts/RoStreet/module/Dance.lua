@@ -3,6 +3,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local currentDanceTrack = nil
 local settingsConnection = nil
+local charAddedConnection = nil
 
 local r15_dances = {
     ["Dance 1"] = "3333432454", ["Dance 2"] = "4555808220", ["Dance 3"] = "4049037604",
@@ -22,7 +23,7 @@ end
 
 local function refresh(ctx)
     local character = LocalPlayer.Character
-    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+    local humanoid = character and character:WaitForChild("Humanoid", 5)
     if not humanoid then return end
 
     if currentDanceTrack then
@@ -63,6 +64,11 @@ return {
     OnEnable = function(ctx)
         refresh(ctx)
 
+        charAddedConnection = LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            refresh(ctx)
+        end)
+
         settingsConnection = ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
                 refresh(ctx)
@@ -71,6 +77,11 @@ return {
     end,
 
     OnDisable = function(ctx)
+        if charAddedConnection then
+            charAddedConnection:Disconnect()
+            charAddedConnection = nil
+        end
+
         if settingsConnection then
             settingsConnection:Disconnect()
             settingsConnection = nil
