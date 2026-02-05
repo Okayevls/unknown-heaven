@@ -9,7 +9,6 @@ local screenGui = nil
 local elements = {}
 local connections = {}
 
--- [ Настройки дизайна ] --
 local Theme = {
     Panel = Color3.fromRGB(255, 255, 255),
     Stroke = Color3.fromRGB(210, 225, 245),
@@ -18,7 +17,6 @@ local Theme = {
     SubText = Color3.fromRGB(95, 120, 155),
 }
 
--- Константа отступа от верхнего бара Roblox
 local TOP_OFFSET = 45
 
 local function create(class, props, parent)
@@ -56,7 +54,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Visual Interface with SafeZones (Watermark, Staff, Notify, Ad)",
+    Desc = "Fixed Hud: Centered WM, Higher Notify, Optimized Ad",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -76,12 +74,13 @@ return {
             DisplayOrder = 100
         }, playerGui)
 
-        -- 1. WATERMARK (С учетом TopBar)
+        -- 1. WATERMARK (Центр сверху)
         if ctx:GetSetting("Watermark") then
             local wm = create("Frame", {
                 Name = "Watermark",
-                Size = UDim2.fromOffset(200, 32),
-                Position = UDim2.fromOffset(20, TOP_OFFSET),
+                AnchorPoint = Vector2.new(0.5, 0),
+                Size = UDim2.fromOffset(220, 32),
+                Position = UDim2.new(0.5, 0, 0, TOP_OFFSET),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -91,21 +90,20 @@ return {
             create("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Text = "  HEAVEN | " .. player.Name:lower(),
+                Text = "HEAVEN | " .. player.Name:lower() .. " | beta",
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.GothamBold,
                 TextSize = 13,
-                TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = wm
             })
         end
 
-        -- 2. STAFF LIST (Ниже ватермарки)
+        -- 2. STAFF LIST
         if ctx:GetSetting("StaffList") then
             local sl = create("Frame", {
                 Name = "StaffList",
                 Size = UDim2.fromOffset(170, 100),
-                Position = UDim2.fromOffset(20, TOP_OFFSET + 45),
+                Position = UDim2.fromOffset(20, TOP_OFFSET),
                 BackgroundColor3 = Theme.Panel,
                 Parent = screenGui
             })
@@ -141,17 +139,18 @@ return {
             })
         end
 
-        -- 3. NOTIFICATIONS SYSTEM
+        -- 3. NOTIFICATIONS (Выше, чем было)
         if ctx:GetSetting("Notifications") then
             local notifyArea = create("Frame", {
                 Name = "NotifyArea",
-                Size = UDim2.new(0, 260, 1, -TOP_OFFSET),
-                Position = UDim2.new(1, -280, 0, TOP_OFFSET),
+                Size = UDim2.new(0, 260, 0.7, 0),
+                -- Сместили вверх, чтобы не липло к низу
+                Position = UDim2.new(1, -280, 0.15, 0),
                 BackgroundTransparency = 1,
                 Parent = screenGui
             })
             create("UIListLayout", {
-                VerticalAlignment = Enum.VerticalAlignment.Bottom,
+                VerticalAlignment = Enum.VerticalAlignment.Top, -- Теперь уведомления идут сверху вниз
                 Padding = UDim.new(0, 8),
                 SortOrder = Enum.SortOrder.LayoutOrder
             }, notifyArea)
@@ -193,13 +192,13 @@ return {
             spawnNotify("Heaven Hud", "Successfully initialized visuals")
         end
 
-        -- 4. FLOATING AD (DVD BOUNCE)
+        -- 4. FLOATING AD (Оптимизация лагов)
         if ctx:GetSetting("DiscordAd") then
             local ad = create("Frame", {
                 Size = UDim2.fromOffset(150, 24),
                 BackgroundColor3 = Theme.Panel,
                 BackgroundTransparency = 0.85,
-                Position = UDim2.fromScale(0.5, 0.5),
+                Position = UDim2.fromOffset(100, 100),
                 Parent = screenGui
             })
             applyStyle(ad, 6)
@@ -215,28 +214,31 @@ return {
                 Parent = ad
             })
 
-            local vel = Vector2.new(75, 75)
+            local vel = Vector2.new(70, 70)
+            local currentX = 100
+            local currentY = 100
+
             table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                if not ad.Parent or not screenGui then return end
+                if not ad or not ad.Parent then return end
 
                 local screen = screenGui.AbsoluteSize
+                if screen.X == 0 then return end
+
                 local size = ad.AbsoluteSize
 
-                -- Рассчитываем новую позицию через Offset для точности
-                local curX = ad.Position.X.Offset
-                local curY = ad.Position.Y.Offset
+                currentX = currentX + (vel.X * dt)
+                currentY = currentY + (vel.Y * dt)
 
-                local nextX = curX + (vel.X * dt)
-                local nextY = curY + (vel.Y * dt)
+                if currentX <= 0 or currentX + size.X >= screen.X then
+                    vel = Vector2.new(-vel.X, vel.Y)
+                    currentX = math.clamp(currentX, 0, screen.X - size.X)
+                end
+                if currentY <= TOP_OFFSET or currentY + size.Y >= screen.Y then
+                    vel = Vector2.new(vel.X, -vel.Y)
+                    currentY = math.clamp(currentY, TOP_OFFSET, screen.Y - size.Y)
+                end
 
-                -- Границы с учетом TopBar сверху
-                if nextX <= 0 or nextX + size.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) end
-                if nextY <= TOP_OFFSET or nextY + size.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) end
-
-                ad.Position = UDim2.fromOffset(
-                        math.clamp(nextX, 0, screen.X - size.X),
-                        math.clamp(nextY, TOP_OFFSET, screen.Y - size.Y)
-                )
+                ad.Position = UDim2.fromOffset(currentX, currentY)
             end))
         end
     end,
