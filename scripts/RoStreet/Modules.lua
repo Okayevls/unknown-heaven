@@ -17,7 +17,7 @@ return {
         "scripts/RoStreet/module/Desync.lua",
         "scripts/RoStreet/module/Dance.lua",
 
-        "scripts/RoStreet/module/Test.lua",
+        "scripts/RoStreet/module/Hud.lua",
     },
 
     System = {

@@ -67,7 +67,7 @@ return {
         },
         { Type = "Boolean", Name = "Disable Walk Anim", Default = false },
     },
-    
+
     OnEnable = function(ctx)
         refresh(ctx)
 
