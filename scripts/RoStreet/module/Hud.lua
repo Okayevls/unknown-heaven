@@ -234,7 +234,7 @@ end
 function HudMethods:renderTargetHud(ctx)
     -- Основная рамка
     local th = create("Frame", {
-        Name = "TargetHud", Size = UDim2.fromOffset(200, 60), Position = UDim2.new(0.5, 50, 0.5, 50),
+        Name = "TargetHud", Size = UDim2.fromOffset(220, 60), Position = UDim2.new(0.5, 50, 0.5, 50),
         BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
         ClipsDescendants = true, BackgroundTransparency = 1 -- Начинаем с невидимого
     })
@@ -304,7 +304,7 @@ function HudMethods:renderTargetHud(ctx)
             return
         end
 
-        local target = ctx.Shared.SelectedTarget or ctx.Shared.RandomTarget
+        local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
 
         if target and target.Character and target.Character:FindFirstChild("Humanoid") then
             local hum = target.Character.Humanoid
