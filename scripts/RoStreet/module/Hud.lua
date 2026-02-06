@@ -259,7 +259,8 @@ function HudMethods:renderTargetHud(ctx)
     local distLabel = create("TextLabel", { Position = UDim2.fromOffset(12, 85), Size = UDim2.new(1, -24, 0, 16), BackgroundTransparency = 1, Text = "", TextColor3 = Theme.SubText, Font = 17, TextSize = 10, TextXAlignment = 0, Parent = th, TextTransparency = 1 })
 
     local isVisible = false
-    local displayHp, displayAp = 0, 0 -- Для плавных цифр
+    -- ПЕРЕМЕННЫЕ ДЛЯ LERP (плавности)
+    local lerpHP, lerpAP = 0, 0
 
     local function animate(tr)
         if tr == 0 then th.Visible = true end
@@ -279,57 +280,64 @@ function HudMethods:renderTargetHud(ctx)
     end
 
     table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+        -- Важно: используй правильный путь к цели (SelectedTarget)
         local target = ctx.SharedTrash and (ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget)
 
-        if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
-            if not isVisible then isVisible = true animate(0) end
-
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
             local char = target.Character
             local hum = char.Humanoid
-            nameLabel.Text = target.DisplayName or target.Name
 
-            -- ПЛАВНЫЕ ЦИФРЫ И ПОЛОСКИ (LERP)
-            local targetHp = hum.Health
-            local targetMaxHp = hum.MaxHealth
-            displayHp = math.floor(displayHp + (targetHp - displayHp) * 0.15) -- Плавный довод цифр
+            -- Если цель жива
+            if hum.Health > 0 then
+                if not isVisible then isVisible = true animate(0) end
 
-            local hpPercent = math.clamp(targetHp / targetMaxHp, 0, 1)
-            hpF.Size = hpF.Size:Lerp(UDim2.fromScale(hpPercent, 1), 0.2)
-            hpT.Text = string.format("%d / %d HP", math.max(0, displayHp), targetMaxHp)
+                nameLabel.Text = target.DisplayName or target.Name
 
-            -- БРОНЯ
-            local armorVal = 0
-            local v = char:FindFirstChild("Values")
-            if v and v:FindFirstChild("Armor") then armorVal = v.Armor.Value end
-            displayAp = math.floor(displayAp + (armorVal - displayAp) * 0.15)
+                -- ФИКС РАСЧЕТА HP
+                local realHp = hum.Health
+                local maxHp = hum.MaxHealth
+                -- Плавный переход значения для полоски
+                lerpHP = lerpHP + (realHp - lerpHP) * 0.15
 
-            local apPercent = math.clamp(armorVal / 100, 0, 1)
-            apF.Size = apF.Size:Lerp(UDim2.fromScale(apPercent, 1), 0.2)
-            apT.Text = string.format("%d AP", math.max(0, displayAp))
+                local hpPercent = math.clamp(lerpHP / maxHp, 0, 1)
+                hpF.Size = UDim2.fromScale(hpPercent, 1)
+                hpT.Text = string.format("%d / %d HP", math.floor(realHp), math.floor(maxHp))
 
-            -- ТОЧНЫЙ РАСЧЕТ RAGDOLL (До 30 HP)
-            local isRag = char:GetAttribute("Ragdoll")
-            if isRag then
-                if targetHp < 30 then
-                    local hpNeeded = 30 - targetHp
-                    local regenSpeed = 2 -- Измени, если реген другой (HP в сек)
-                    local timeToWake = hpNeeded / regenSpeed
+                -- ФИКС РАСЧЕТА AP (Брони)
+                local armorVal = 0
+                local v = char:FindFirstChild("Values")
+                if v and v:FindFirstChild("Armor") then armorVal = v.Armor.Value end
 
-                    ragLabel.Text = string.format("WAKING UP IN: %.2fs", timeToWake) -- ТОЧНОСТЬ ДО СОТЫХ
-                    ragLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+                lerpAP = lerpAP + (armorVal - lerpAP) * 0.15
+                local apPercent = math.clamp(lerpAP / 100, 0, 1)
+                apF.Size = UDim2.fromScale(apPercent, 1)
+                apT.Text = math.floor(armorVal) .. " AP"
+
+                -- РАСЧЕТ RAGDOLL (До подъема при 30 HP)
+                local isRag = char:GetAttribute("Ragdoll")
+                if isRag then
+                    if realHp < 30 then
+                        local hpNeeded = 30 - realHp
+                        local regenSpeed = 2 -- твоя скорость регена
+                        local timeToWake = hpNeeded / regenSpeed
+                        ragLabel.Text = string.format("WAKING UP IN: %.2fs", math.max(0, timeToWake))
+                        ragLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+                    else
+                        ragLabel.Text = "WAKING UP NOW..."
+                        ragLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                    end
                 else
-                    ragLabel.Text = "WAKING UP NOW..."
-                    ragLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                    ragLabel.Text = ""
                 end
-            else
-                ragLabel.Text = ""
-            end
 
-            -- ДИСТАНЦИЯ
-            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            local tRoot = char:FindFirstChild("HumanoidRootPart")
-            local dist = (myRoot and tRoot) and (myRoot.Position - tRoot.Position).Magnitude or 0
-            distLabel.Text = string.format("Distance: %.1fm", dist)
+                -- Дистанция
+                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                local tRoot = char:FindFirstChild("HumanoidRootPart")
+                local dist = (myRoot and tRoot) and (myRoot.Position - tRoot.Position).Magnitude or 0
+                distLabel.Text = string.format("Distance: %.1fm", dist)
+            else
+                if isVisible then isVisible = false animate(1) end
+            end
         else
             if isVisible then isVisible = false animate(1) end
         end
