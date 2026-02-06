@@ -110,7 +110,7 @@ function HudMethods:renderStaffList(ctx)
     }
 
     local sl = create("Frame", {
-        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 250),
+        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 300),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
         Visible = ctx:GetSetting("StaffList"),
         ClipsDescendants = true
@@ -233,7 +233,7 @@ end
 
 function HudMethods:renderTargetHud(ctx)
     local th = create("Frame", {
-        Name = "TargetHud", Size = UDim2.fromOffset(240, 90), -- Увеличили для читаемости
+        Name = "TargetHud", Size = UDim2.fromOffset(240, 110), -- Еще чуть выше для таймера
         AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.85, 0),
         BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
         BackgroundTransparency = 1, ClipsDescendants = true
@@ -256,45 +256,36 @@ function HudMethods:renderTargetHud(ctx)
         BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = th, BackgroundTransparency = 1
     })
     create("UICorner", {CornerRadius = UDim.new(0, 4)}, hpBack)
-
-    local hpFill = create("Frame", {
-        Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(255, 80, 80),
-        Parent = hpBack, BackgroundTransparency = 1
-    })
+    local hpFill = create("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(255, 80, 80), Parent = hpBack, BackgroundTransparency = 1 })
     create("UICorner", {CornerRadius = UDim.new(0, 4)}, hpFill)
-
-    local hpText = create("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "100 HP",
-        TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = hpBack, TextTransparency = 1
-    })
+    local hpText = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "100 HP", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = hpBack, TextTransparency = 1 })
 
     -- Полоска Armor
-    local apBack = create("Frame", {
-        Position = UDim2.fromOffset(12, 48), Size = UDim2.new(1, -24, 0, 12),
-        BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = th, BackgroundTransparency = 1
-    })
+    local apBack = create("Frame", { Position = UDim2.fromOffset(12, 48), Size = UDim2.new(1, -24, 0, 12), BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = th, BackgroundTransparency = 1 })
     create("UICorner", {CornerRadius = UDim.new(0, 4)}, apBack)
-
-    local apFill = create("Frame", {
-        Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 200, 255),
-        Parent = apBack, BackgroundTransparency = 1
-    })
+    local apFill = create("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 200, 255), Parent = apBack, BackgroundTransparency = 1 })
     create("UICorner", {CornerRadius = UDim.new(0, 4)}, apFill)
+    local apText = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "0 AP", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = apBack, TextTransparency = 1 })
 
-    local apText = create("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "0 AP",
-        TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = apBack, TextTransparency = 1
+    -- ТЕКСТ RAGDOLL (Таймер)
+    local ragdollLabel = create("TextLabel", {
+        Position = UDim2.fromOffset(12, 64), Size = UDim2.new(1, -24, 0, 16),
+        BackgroundTransparency = 1, Text = "STUNNED: 0.0s", TextColor3 = Color3.fromRGB(255, 150, 50),
+        Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = 0, Parent = th, TextTransparency = 1,
+        Visible = false
     })
 
     -- Дистанция
     local distLabel = create("TextLabel", {
-        Position = UDim2.fromOffset(12, 65), Size = UDim2.new(1, -24, 0, 16),
+        Position = UDim2.fromOffset(12, 82), Size = UDim2.new(1, -24, 0, 16),
         BackgroundTransparency = 1, Text = "Distance: 0m", TextColor3 = Theme.SubText,
         Font = Enum.Font.GothamMedium, TextSize = 11, TextXAlignment = 0, Parent = th, TextTransparency = 1
     })
 
     local isVisible = false
-    local tInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local ragdollTime = 0
+    local lastRagdollState = false
+    local tInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart)
 
     local function animate(targetTrans)
         if targetTrans == 0 then th.Visible = true end
@@ -307,12 +298,13 @@ function HudMethods:renderTargetHud(ctx)
         TweenService:Create(apBack, tInfo, {BackgroundTransparency = targetTrans}):Play()
         TweenService:Create(apFill, tInfo, {BackgroundTransparency = targetTrans}):Play()
         TweenService:Create(apText, tInfo, {TextTransparency = targetTrans}):Play()
+        TweenService:Create(ragdollLabel, tInfo, {TextTransparency = targetTrans}):Play()
         local last = TweenService:Create(distLabel, tInfo, {TextTransparency = targetTrans})
         last:Play()
         if targetTrans == 1 then last.Completed:Connect(function() if not isVisible then th.Visible = false end end) end
     end
 
-    table.insert(connections, RunService.Heartbeat:Connect(function()
+    table.insert(connections, RunService.Heartbeat:Connect(function(dt)
         if not ctx:GetSetting("TargetHud") then
             if isVisible then isVisible = false; animate(1) end
             return
@@ -322,30 +314,39 @@ function HudMethods:renderTargetHud(ctx)
         if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
             if not isVisible then isVisible = true; animate(0) end
 
-            local hum = target.Character.Humanoid
-            nameLabel.Text = target.DisplayName or target.Name
+            local char = target.Character
+            local hum = char.Humanoid
 
-            -- Броня (внутри персонажа цели)
-            local armorVal = 0
-            local values = target.Character:FindFirstChild("Values")
-            if values and values:FindFirstChild("Armor") then
-                armorVal = values.Armor.Value
+            -- ЛОГИКА RAGDOLL ТАЙМЕРА
+            local isRagdoll = char:GetAttribute("Ragdoll")
+            if isRagdoll then
+                if not lastRagdollState then
+                    -- Если только что упал, ставим время (например 3.5 сек, подправь под свою игру)
+                    ragdollTime = 3.5
+                    ragdollLabel.Visible = true
+                end
+                ragdollTime = math.max(0, ragdollTime - dt)
+                ragdollLabel.Text = string.format("STUNNED: %.1fs", ragdollTime)
+                ragdollLabel.TextColor3 = Color3.fromRGB(255, 100 + (155 * (1 - ragdollTime/3.5)), 50) -- Цвет меняется с оранжевого на красный
+            else
+                ragdollLabel.Visible = false
+                ragdollTime = 0
             end
+            lastRagdollState = isRagdoll
 
-            -- Обновление полосок и текста
-            local hpRatio = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-            local apRatio = math.clamp(armorVal / 100, 0, 1)
+            -- Обновление ХП и Брони
+            local armorVal = 0
+            local v = char:FindFirstChild("Values")
+            if v and v:FindFirstChild("Armor") then armorVal = v.Armor.Value end
 
-            TweenService:Create(hpFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(hpRatio, 1)}):Play()
-            TweenService:Create(apFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(apRatio, 1)}):Play()
-
+            hpFill.Size = UDim2.fromScale(math.clamp(hum.Health/hum.MaxHealth, 0, 1), 1)
+            apFill.Size = UDim2.fromScale(math.clamp(armorVal/100, 0, 1), 1)
             hpText.Text = string.format("%d / %d HP", math.floor(hum.Health), math.floor(hum.MaxHealth))
             apText.Text = string.format("%d AP", math.floor(armorVal))
 
             local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            local d = (myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude) or 0
-            distLabel.Text = "Distance: " .. d .. "m"
+            local tRoot = char:FindFirstChild("HumanoidRootPart")
+            distLabel.Text = "Distance: " .. ((myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude) or 0) .. "m"
         else
             if isVisible then isVisible = false; animate(1) end
         end
