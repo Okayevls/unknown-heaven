@@ -1007,6 +1007,10 @@ local function moduleCard(tabName, mName, desc)
 
     tgl:Set(st.Enabled)
     tgl.OnChanged = function(v)
+        if st.Definition.AlwaysEnabled then
+            tgl:Set(true)
+            return
+        end
         moduleMgr:SetEnabled(tabName, mName, v)
     end
 

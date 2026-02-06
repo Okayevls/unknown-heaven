@@ -380,12 +380,21 @@ function ModuleManager:SetEnabled(categoryName: string, moduleName: string, enab
 local st = self:GetState(categoryName, moduleName)
 if not st then return end
 
-if st.Definition.AlwaysEnabled and enabled == false then
-return
+if st.Definition.AlwaysEnabled then
+enabled = true
 end
 
 local newValue = (enabled == true)
-if st.Enabled == newValue then return end
+if st.Enabled == newValue then
+self._ChangedEvent:Fire({
+kind = "Enabled",
+category = categoryName,
+moduleName = moduleName,
+key = nil,
+value = st.Enabled,
+} :: ChangedPayload)
+return
+end
 
 st.Enabled = newValue
 
