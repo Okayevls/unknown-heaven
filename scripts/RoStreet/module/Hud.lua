@@ -58,7 +58,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Visuals with Notification Limit",
+    Desc = "Показывает всякую информацию",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -66,7 +66,7 @@ return {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
         { Type = "Boolean", Name = "Notifications", Default = true },
-        { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 10, Step = 1 },
+        { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 12, Step = 1 },
         { Type = "Boolean", Name = "DiscordAd", Default = true },
     },
 
