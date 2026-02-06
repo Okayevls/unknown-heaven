@@ -53,53 +53,46 @@ local function findNearestToMouse()
     return closestPlayer
 end
 
-local function toggleSpectate(target)
-    if isSpectating then
-        Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+local function toggleSpectate(ctx, target)
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if isSpectating or not target then
+        -- Возвращаем камеру себе
+        if hum then Camera.CameraSubject = hum end
         isSpectating = false
-    elseif target and target.Character and target.Character:FindFirstChild("Humanoid") then
-        Camera.CameraSubject = target.Character.Humanoid
+        if ctx and ctx.Shared then ctx.Shared.IsSpectating = false end
+    elseif target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
+        -- Следим за целью
+        Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
         isSpectating = true
+        if ctx and ctx.Shared then ctx.Shared.IsSpectating = true end
     end
 end
 
 local function create3DTracer(fromAttachment, targetPosition)
     local startPart = Instance.new("Part")
-    startPart.Size = Vector3.new(0.1, 0.1, 0.1)
-    startPart.Anchored = true
-    startPart.CanCollide = false
-    startPart.Transparency = 1
+    startPart.Size, startPart.Anchored, startPart.CanCollide, startPart.Transparency = Vector3.new(0.1, 0.1, 0.1), true, false, 1
     startPart.Position = fromAttachment.WorldPosition
     startPart.Parent = workspace
 
-    local attachStart = Instance.new("Attachment")
-    attachStart.Parent = startPart
-
-    local endPart = Instance.new("Part")
-    endPart.Size = Vector3.new(0.1, 0.1, 0.1)
-    endPart.Anchored = true
-    endPart.CanCollide = false
-    endPart.Transparency = 1
+    local attachStart = Instance.new("Attachment", startPart)
+    local endPart = startPart:Clone()
     endPart.Position = targetPosition
     endPart.Parent = workspace
-
-    local attachEnd = Instance.new("Attachment")
-    attachEnd.Parent = endPart
+    local attachEnd = Instance.new("Attachment", endPart)
 
     local beam = Instance.new("Beam")
-    beam.Attachment0 = attachStart
-    beam.Attachment1 = attachEnd
-    beam.FaceCamera = true
+    beam.Attachment0, beam.Attachment1 = attachStart, attachEnd
+    beam.FaceCamera, beam.LightEmission = true, 0.9
     beam.Color = ColorSequence.new(Color3.fromRGB(255, 190, 255), Color3.fromRGB(180, 140, 255))
     beam.Width0, beam.Width1 = 0.2, 0.2
-    beam.LightEmission = 0.9
     beam.Transparency = NumberSequence.new(0, 0.8)
     beam.Parent = workspace
 
     task.spawn(function()
-        local steps = 40
-        for i = 1, steps do
-            local factor = 1 - (i / steps)
+        for i = 1, 40 do
+            local factor = 1 - (i / 40)
             beam.Width0, beam.Width1 = 0.2 * factor, 0.2 * factor
             task.wait(0.025)
         end
@@ -112,25 +105,18 @@ local function updateLine()
         if line then line.Visible = false end
         return
     end
-    local localChar = LocalPlayer.Character
-    if not localChar or not localChar:FindFirstChild("Head") then
-        if line then line.Visible = false end
-        return
-    end
-
     if not line then
         line = Drawing.new("Line")
-        line.Visible = true
-        line.Color = Color3.fromRGB(255, 255, 255)
-        line.Thickness = 2
+        line.Visible, line.Color, line.Thickness = true, Color3.fromRGB(255, 255, 255), 2
     end
+    local localChar = LocalPlayer.Character
+    if not localChar or not localChar:FindFirstChild("Head") then line.Visible = false return end
 
     local fromScreen, fromVisible = Camera:WorldToViewportPoint(localChar.Head.Position)
     local toScreen, toVisible = Camera:WorldToViewportPoint(selectedTarget.Character.Head.Position)
 
     if fromVisible and toVisible then
-        line.From, line.To = Vector2.new(fromScreen.X, fromScreen.Y), Vector2.new(toScreen.X, toScreen.Y)
-        line.Visible = true
+        line.From, line.To, line.Visible = Vector2.new(fromScreen.X, fromScreen.Y), Vector2.new(toScreen.X, toScreen.Y), true
     else
         line.Visible = false
     end
@@ -146,9 +132,8 @@ local function shoot(targetPlayer, ctx)
     if lastAmmoPerAmmoObject[ammo] == nil then lastAmmoPerAmmoObject[ammo] = ammo.Value end
 
     local char = targetPlayer.Character
-    if not char then return end
-    local head = char:FindFirstChild("Head")
-    local root = char:FindFirstChild("HumanoidRootPart")
+    local head = char and char:FindFirstChild("Head")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
     local predicted = head.Position
@@ -160,29 +145,18 @@ local function shoot(targetPlayer, ctx)
     local muzzle = gun:FindFirstChild("Muzzle") or (gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front"))
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
 
-    if ammo.Value == lastAmmoPerAmmoObject[ammo] then return end
-    lastAmmoPerAmmoObject[ammo] = ammo.Value
-
-    if muzzle then
-        local attach = muzzle:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", muzzle)
-        create3DTracer(attach, predicted)
+    if ammo.Value ~= lastAmmoPerAmmoObject[ammo] then
+        lastAmmoPerAmmoObject[ammo] = ammo.Value
+        if muzzle then
+            local attach = muzzle:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", muzzle)
+            create3DTracer(attach, predicted)
+        end
     end
 end
 
 local function stomp(targetPlayer)
-    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Stomp"):InvokeServer(targetPlayer.Character)
-end
-
-local function blockShoot(_, state)
-    if state == Enum.UserInputState.Begin and getEquippedWeapon() and (randomTarget or selectedTarget) then
-        isShooting = true
-        return Enum.ContextActionResult.Sink
-    end
-    return Enum.ContextActionResult.Pass
-end
-
-local function getKeyCode(bind)
-    return (bind and bind.kind == "KeyCode") and bind.code or nil
+    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("Stomp")
+    if remote and targetPlayer.Character then remote:InvokeServer(targetPlayer.Character) end
 end
 
 local _connections = {}
@@ -203,21 +177,26 @@ return {
     },
 
     OnEnable = function(ctx)
-        ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1)
+        ContextActionService:BindAction("BlockShoot", function(_, state)
+            if state == Enum.UserInputState.Begin and getEquippedWeapon() and (randomTarget or selectedTarget) then
+                isShooting = true
+                return Enum.ContextActionResult.Sink
+            end
+            return Enum.ContextActionResult.Pass
+        end, false, Enum.UserInputType.MouseButton1)
 
-        _connections.InputBegan = UserInputService.InputBegan:Connect(function(input, processed)
+        _connections.Input = UserInputService.InputBegan:Connect(function(input, processed)
             if processed then return end
-
             local selectBind = getKeyCode(ctx:GetSetting("Select Target"))
             local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
-            local spectateBind = getKeyCode(ctx:GetSetting("Spectate Target"))
+            local specBind = getKeyCode(ctx:GetSetting("Spectate Target"))
 
             local currentTarget = selectedTarget or randomTarget
 
             if selectBind and input.KeyCode == selectBind then
                 if selectedTarget then
                     selectedTarget = nil
-                    if isSpectating then toggleSpectate() end
+                    if isSpectating then toggleSpectate(ctx) end
                     if line then line.Visible = false end
                 else
                     selectedTarget = findNearestToMouse()
@@ -228,16 +207,16 @@ return {
                 stomp(currentTarget)
             end
 
-            if spectateBind and input.KeyCode == spectateBind then
-                toggleSpectate(currentTarget)
+            if specBind and input.KeyCode == specBind then
+                toggleSpectate(ctx, currentTarget)
             end
         end)
 
-        _connections.InputEnded = UserInputService.InputEnded:Connect(function(input)
+        _connections.InputEnd = UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then isShooting = false end
         end)
 
-        _connections.RenderStepped = RunService.RenderStepped:Connect(function()
+        _connections.Render = RunService.RenderStepped:Connect(function()
             if selectedTarget then
                 updateLine()
                 randomTarget = nil
@@ -246,41 +225,33 @@ return {
             end
 
             local target = selectedTarget or randomTarget
-            if isShooting and target then
-                shoot(target, ctx)
-            end
+            if isShooting and target then shoot(target, ctx) end
 
-            if isSpectating and (not target or not target.Character or not target.Character:FindFirstChild("Humanoid")) then
-                toggleSpectate()
+            if isSpectating then
+                if not target or not target.Character or not target.Character:FindFirstChildOfClass("Humanoid") or target.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+                    toggleSpectate(ctx)
+                end
             end
 
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
         end)
 
-        _connections.CharAdded = LocalPlayer.CharacterAdded:Connect(function()
+        _connections.Death = LocalPlayer.CharacterAdded:Connect(function()
             if ctx:GetSetting("Reset Target On Death") then
                 selectedTarget = nil
-                if isSpectating then toggleSpectate() end
-            end
-        end)
-
-        _connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
-            if player == selectedTarget then
-                selectedTarget = nil
-                if isSpectating then toggleSpectate() end
+                if isSpectating then toggleSpectate(ctx) end
             end
         end)
     end,
 
     OnDisable = function(ctx)
         ContextActionService:UnbindAction("BlockShoot")
-        for _, conn in pairs(_connections) do conn:Disconnect() end
+        for _, c in pairs(_connections) do c:Disconnect() end
         _connections = {}
 
-        if isSpectating then toggleSpectate() end
+        if isSpectating then toggleSpectate(ctx) end
         if line then line:Remove() line = nil end
-        isShooting = false
-        selectedTarget = nil
+        isShooting, selectedTarget, randomTarget = false, nil, nil
         ProximityPromptService.Enabled = true
     end,
 }

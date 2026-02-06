@@ -14,19 +14,9 @@ local desync = {
     old_position = nil
 }
 
-local function isCameraFree()
-    local subject = workspace.CurrentCamera.CameraSubject
-    if not subject then return true end
-
-    local char = LocalPlayer.Character
-    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-
-    return subject == humanoid or subject == desync_setback
-end
-
 local function resetCamera()
     if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             workspace.CurrentCamera.CameraSubject = humanoid
         end
@@ -34,7 +24,7 @@ local function resetCamera()
 end
 
 local function getGroundLevel()
-    local char = game.Players.LocalPlayer.Character
+    local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     if not root or not humanoid then return nil end
@@ -82,6 +72,7 @@ return {
                 if LocalPlayer.Character then
                     local currentTime = tick()
                     local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
                     if not isFlicking and currentTime >= nextFlick then
                         isFlicking = true
                         flickEnd = currentTime + flickDuration
@@ -102,16 +93,19 @@ return {
                             desync.teleportPosition = randomOffset
                         end
 
-                        rootPart.CFrame = CFrame.new(desync.teleportPosition)
-
-                        if isCameraFree() then
+                        if ctx.Shared.IsSpectating then
+                            rootPart.CFrame = CFrame.new(desync.teleportPosition)
+                            RunService.Heartbeat:Wait()
+                            rootPart.CFrame = desync.old_position
+                        else
+                            rootPart.CFrame = CFrame.new(desync.teleportPosition)
                             workspace.CurrentCamera.CameraSubject = desync_setback
+
+                            RunService.RenderStepped:Wait()
+
+                            desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
+                            rootPart.CFrame = desync.old_position
                         end
-
-                        RunService.RenderStepped:Wait()
-
-                        desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
-                        rootPart.CFrame = desync.old_position
 
                         if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
                             local ground = backGroundY
@@ -124,7 +118,7 @@ return {
                 end
             end))
 
-            if isCameraFree() then
+            if not ctx.Shared.IsSpectating then
                 workspace.CurrentCamera.CameraSubject = desync_setback
             end
         end
