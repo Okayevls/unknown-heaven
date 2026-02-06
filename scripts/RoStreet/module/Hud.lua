@@ -30,7 +30,7 @@ end
 
 local function applyStyle(obj, radius)
     create("UICorner", {CornerRadius = UDim.new(0, radius or 10)}, obj)
-    create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
+    return create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
 local function applyScaleDrag(frame, targetGui)
@@ -130,49 +130,58 @@ return {
                 local oldest = table.remove(activeNotifs, 1)
                 if oldest and oldest.Parent then oldest:Destroy() end
             end
-            
-            local n = create("CanvasGroup", {
+
+            -- Создаем уведомление
+            local n = create("Frame", {
                 Name = "Notification",
-                Size = UDim2.new(1, 0, 0, 54),
+                Size = UDim2.new(1, 0, 0, 0), -- Начинаем с нулевой высоты
                 BackgroundColor3 = Theme.Panel,
-                GroupTransparency = 1,
+                BackgroundTransparency = 1, -- Начинаем прозрачным
                 ClipsDescendants = true,
                 Parent = notifyArea
             })
 
-            applyStyle(n, 10)
+            -- Применяем стиль и сразу берем ссылку на обводку
+            local stroke = applyStyle(n, 10) -- Мы изменили applyStyle, чтобы он возвращал объект
+            stroke.Transparency = 1 -- Обводка тоже в начале невидима
+
             create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
 
-            create("TextLabel", {
+            local t1 = create("TextLabel", {
                 Text = title, Font = Enum.Font.GothamBold, TextSize = 13,
                 TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16),
-                TextXAlignment = 0, BackgroundTransparency = 1, Parent = n
+                TextXAlignment = 0, BackgroundTransparency = 1, TextTransparency = 1, Parent = n
             })
 
-            create("TextLabel", {
+            local t2 = create("TextLabel", {
                 Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11,
                 TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18),
                 Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0,
-                BackgroundTransparency = 1, Parent = n
+                BackgroundTransparency = 1, TextTransparency = 1, Parent = n
             })
 
             table.insert(activeNotifs, n)
-            n.Size = UDim2.new(1, 0, 0, 0)
-            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
-                Size = UDim2.new(1, 0, 0, 54),
-                GroupTransparency = 0
-            }):Play()
+
+            -- АНИМАЦИЯ ПОЯВЛЕНИЯ
+            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = UDim2.new(1, 0, 0, 54), BackgroundTransparency = 0}):Play()
+            TweenService:Create(stroke, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Transparency = 0}):Play()
+            TweenService:Create(t1, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {TextTransparency = 0}):Play()
+            TweenService:Create(t2, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {TextTransparency = 0}):Play()
 
             task.delay(4, function()
                 if not n or not n.Parent then return end
                 local idx = table.find(activeNotifs, n)
                 if idx then table.remove(activeNotifs, idx) end
-                local tw = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
-                    Size = UDim2.new(1, 0, 0, 0),
-                    GroupTransparency = 1
-                })
-                tw:Play()
-                tw.Completed:Connect(function() n:Destroy() end)
+
+                -- АНИМАЦИЯ ИСЧЕЗНОВЕНИЯ (Фикс аутлайна)
+                -- Мы форсированно уводим прозрачность обводки в 1 одновременно с уменьшением размера
+                TweenService:Create(n, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1}):Play()
+                TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {Transparency = 1}):Play()
+                TweenService:Create(t1, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {TextTransparency = 1}):Play()
+                local lastTw = TweenService:Create(t2, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {TextTransparency = 1})
+
+                lastTw:Play()
+                lastTw.Completed:Connect(function() n:Destroy() end)
             end)
         end
         ctx.Shared.Notify = spawnNotify
