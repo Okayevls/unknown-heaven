@@ -183,23 +183,7 @@ local function shoot(targetPlayer, ctx)
         muzzle = gun.Muzzle
     end
 
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {char, LocalPlayer.Character, workspace.CurrentCamera}
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-    local ceilingCheck = workspace:Raycast(head.Position, Vector3.new(0, 300, 0), rayParams)
-    if ceilingCheck then
-        ctx.SharedTrash.IsFiring = true
-        RunService.Heartbeat:Wait()
-    else
-        ctx.SharedTrash.IsFiring = false
-    end
-
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
-
-    task.defer(function()
-        ctx.SharedTrash.IsFiring = false
-    end)
 
     if ammo.Value == lastAmmoPerAmmoObject[ammo] then
         return

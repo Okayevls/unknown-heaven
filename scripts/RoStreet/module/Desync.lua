@@ -87,12 +87,12 @@ return {
                         isFlicking = true
                         flickEnd = currentTime + flickDuration
                     end
-                    local forceGround = ctx.SharedTrash and ctx.SharedTrash.IsFiring
+
                     if rootPart then
                         desync.old_position = rootPart.CFrame
 
                         local randomOffset = Vector3.new(rootPart.Position.x, math.random(ctx:GetSetting("MinY"), ctx:GetSetting("MaxY")), rootPart.Position.z)
-                        if isFlicking or forceGround then
+                        if isFlicking then
                             local groundY = ctx:GetSetting("Calculate Ground") and getGroundLevel() or rootPart.Position.y
                             desync.teleportPosition = Vector3.new(rootPart.Position.x,  groundY, rootPart.Position.z)
                             if currentTime >= flickEnd then
