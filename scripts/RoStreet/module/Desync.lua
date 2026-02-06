@@ -1,9 +1,9 @@
 local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 local desync_setback = Instance.new("Part")
 desync_setback.Name = "dsHv4"
-desync_setback.Parent = workspace
 desync_setback.Size = Vector3.new(2, 2, 1)
 desync_setback.CanCollide = false
 desync_setback.Anchored = true
@@ -15,11 +15,10 @@ local desync = {
 }
 
 local function resetCamera()
-    if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            workspace.CurrentCamera.CameraSubject = humanoid
-        end
+    local char = LocalPlayer.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        workspace.CurrentCamera.CameraSubject = humanoid
     end
 end
 
@@ -27,21 +26,20 @@ local function getGroundLevel()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-    if not root or not humanoid then return nil end
+    if not root or not humanoid then return 0 end
+
     local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {char}
+    rayParams.FilterDescendantsInstances = {char, desync_setback}
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
     local currentOrigin = root.Position
-    local traveled = 0
-    while traveled < 1e5 do
-        local result = workspace:Raycast(currentOrigin, Vector3.new(0, -5000, 0), rayParams)
-        if result then
-            return result.Position.y + (root.Size.Y / 2) + humanoid.HipHeight
-        end
-        currentOrigin = currentOrigin - Vector3.new(0, 5000, 0)
-        traveled = traveled + 5000
+    local result = workspace:Raycast(currentOrigin, Vector3.new(0, -10000, 0), rayParams)
+    if result then
+        local legOffset = (root.Size.Y / 2) + humanoid.HipHeight
+        return result.Position.Y + legOffset
     end
-    return root.Position.y
+
+    return root.Position.Y
 end
 
 local _connections = {}
@@ -54,7 +52,7 @@ local backGroundY = 0
 
 return {
     Name = "Desync",
-    Desc = "Дает огромнейшие преимущество над игроками",
+    Desc = "Манипуляция позицией для защиты от Silent Aim",
     Class = "Movement",
     Category = "Movement",
 
@@ -67,66 +65,76 @@ return {
     },
 
     OnEnable = function(ctx)
+        desync_setback.Parent = workspace
+
         if ctx:GetSetting("Mode") == "Step" then
             table.insert(_connections, RunService.Heartbeat:Connect(function()
-                if LocalPlayer.Character then
-                    local currentTime = tick()
-                    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local char = LocalPlayer.Character
+                local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+                if not rootPart then return end
 
-                    if not isFlicking and currentTime >= nextFlick then
-                        isFlicking = true
-                        flickEnd = currentTime + flickDuration
+                local currentTime = tick()
+                if not isFlicking and currentTime >= nextFlick then
+                    isFlicking = true
+                    flickEnd = currentTime + flickDuration
+                end
+
+                desync.old_position = rootPart.CFrame
+                local randomY = math.random(ctx:GetSetting("MinY"), ctx:GetSetting("MaxY"))
+                local randomOffset = Vector3.new(rootPart.Position.X, randomY, rootPart.Position.Z)
+
+                if isFlicking then
+                    local groundY = ctx:GetSetting("Calculate Ground") and getGroundLevel() or rootPart.Position.Y
+                    desync.teleportPosition = Vector3.new(rootPart.Position.X, groundY, rootPart.Position.Z)
+                    if currentTime >= flickEnd then
+                        isFlicking = false
+                        nextFlick = currentTime + math.random(minWait, maxWait)
                     end
+                else
+                    desync.teleportPosition = randomOffset
+                end
 
-                    if rootPart then
-                        desync.old_position = rootPart.CFrame
-                        local randomOffset = Vector3.new(rootPart.Position.x, math.random(ctx:GetSetting("MinY"), ctx:GetSetting("MaxY")), rootPart.Position.z)
+                local isSpectating = ctx.Shared and ctx.Shared.IsSpectating
 
-                        if isFlicking then
-                            local groundY = ctx:GetSetting("Calculate Ground") and getGroundLevel() or rootPart.Position.y
-                            desync.teleportPosition = Vector3.new(rootPart.Position.x, groundY, rootPart.Position.z)
-                            if currentTime >= flickEnd then
-                                isFlicking = false
-                                nextFlick = currentTime + math.random(minWait, maxWait)
-                            end
-                        else
-                            desync.teleportPosition = randomOffset
-                        end
+                if not isSpectating then
+                    rootPart.CFrame = CFrame.new(desync.teleportPosition)
+                    workspace.CurrentCamera.CameraSubject = desync_setback
 
-                        if ctx.Shared.IsSpectating then
-                            rootPart.CFrame = CFrame.new(desync.teleportPosition)
-                            RunService.Heartbeat:Wait()
-                            rootPart.CFrame = desync.old_position
-                        else
-                            rootPart.CFrame = CFrame.new(desync.teleportPosition)
-                            workspace.CurrentCamera.CameraSubject = desync_setback
+                    RunService.RenderStepped:Wait()
 
-                            RunService.RenderStepped:Wait()
+                    desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
+                    rootPart.CFrame = desync.old_position
+                else
+                    rootPart.CFrame = CFrame.new(desync.teleportPosition)
+                    RunService.Heartbeat:Wait()
+                    rootPart.CFrame = desync.old_position
+                end
 
-                            desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
-                            rootPart.CFrame = desync.old_position
-                        end
-
-                        if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
-                            local ground = backGroundY
-                            rootPart.CFrame = CFrame.new(rootPart.Position.X, ground, rootPart.Position.Z)
-                            desync.teleportPosition = Vector3.new(rootPart.Position.X, ground, rootPart.Position.Z)
-                        else
-                            backGroundY = getGroundLevel()
-                        end
-                    end
+                if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
+                    local ground = (backGroundY ~= 0) and backGroundY or getGroundLevel()
+                    rootPart.CFrame = CFrame.new(rootPart.Position.X, ground, rootPart.Position.Z)
+                    desync.teleportPosition = Vector3.new(rootPart.Position.X, ground, rootPart.Position.Z)
+                else
+                    backGroundY = getGroundLevel()
                 end
             end))
 
-            if not ctx.Shared.IsSpectating then
+            if ctx.Shared and not ctx.Shared.IsSpectating then
                 workspace.CurrentCamera.CameraSubject = desync_setback
             end
         end
     end,
 
     OnDisable = function(ctx)
-        for _, conn in ipairs(_connections) do conn:Disconnect() end
+        for _, conn in ipairs(_connections) do
+            if conn then conn:Disconnect() end
+        end
         _connections = {}
+        desync_setback.Parent = nil
+
         resetCamera()
+        if ctx.Shared then
+            ctx.Shared.IsSpectating = false
+        end
     end,
 }

@@ -19,6 +19,11 @@ local SupportedWeapons = {
     ["Rpg"] = true, ["Silencer"] = true, ["Spas"] = true, ["Taser"] = true, ["Tec"] = true, ["Ump"] = true
 }
 
+local function getKeyCode(bind)
+    if not bind then return nil end
+    return (bind.kind == "KeyCode") and bind.code or nil
+end
+
 local function getEquippedWeapon()
     local char = LocalPlayer.Character
     if not char then return nil end
@@ -58,12 +63,10 @@ local function toggleSpectate(ctx, target)
     local hum = char and char:FindFirstChildOfClass("Humanoid")
 
     if isSpectating or not target then
-        -- Возвращаем камеру себе
         if hum then Camera.CameraSubject = hum end
         isSpectating = false
         if ctx and ctx.Shared then ctx.Shared.IsSpectating = false end
     elseif target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
-        -- Следим за целью
         Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
         isSpectating = true
         if ctx and ctx.Shared then ctx.Shared.IsSpectating = true end
@@ -187,6 +190,7 @@ return {
 
         _connections.Input = UserInputService.InputBegan:Connect(function(input, processed)
             if processed then return end
+
             local selectBind = getKeyCode(ctx:GetSetting("Select Target"))
             local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
             local specBind = getKeyCode(ctx:GetSetting("Spectate Target"))
@@ -240,6 +244,14 @@ return {
             if ctx:GetSetting("Reset Target On Death") then
                 selectedTarget = nil
                 if isSpectating then toggleSpectate(ctx) end
+            end
+        end)
+
+        _connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(p)
+            if p == selectedTarget then
+                selectedTarget = nil
+                if isSpectating then toggleSpectate(ctx) end
+                if line then line.Visible = false end
             end
         end)
     end,
