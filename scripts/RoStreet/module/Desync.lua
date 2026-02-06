@@ -14,6 +14,16 @@ local desync = {
     old_position = nil
 }
 
+local function isCameraFree()
+    local subject = workspace.CurrentCamera.CameraSubject
+    if not subject then return true end
+
+    local char = LocalPlayer.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+    return subject == humanoid or subject == desync_setback
+end
+
 local function resetCamera()
     if LocalPlayer.Character then
         local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
@@ -28,41 +38,30 @@ local function getGroundLevel()
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     if not root or not humanoid then return nil end
-
     local rayParams = RaycastParams.new()
     rayParams.FilterDescendantsInstances = {char}
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.IgnoreWater = false
-    rayParams.RespectCanCollide = true
-
     local currentOrigin = root.Position
     local traveled = 0
-    local maxDistance = 1e5
-
-    while traveled < maxDistance do
+    while traveled < 1e5 do
         local result = workspace:Raycast(currentOrigin, Vector3.new(0, -5000, 0), rayParams)
-
         if result then
-            local legOffset = (root.Size.Y / 2) + humanoid.HipHeight
-            return result.Position.y + legOffset
+            return result.Position.y + (root.Size.Y / 2) + humanoid.HipHeight
         end
-
         currentOrigin = currentOrigin - Vector3.new(0, 5000, 0)
         traveled = traveled + 5000
     end
-
     return root.Position.y
 end
 
 local _connections = {}
-
 local flickDuration = 0.05
-local minWait = 1
-local maxWait = 3
+local minWait, maxWait = 1, 3
 local nextFlick = tick() + math.random(minWait, maxWait)
 local isFlicking = false
 local flickEnd = 0
 local backGroundY = 0
+
 return {
     Name = "Desync",
     Desc = "Дает огромнейшие преимущество над игроками",
@@ -90,11 +89,11 @@ return {
 
                     if rootPart then
                         desync.old_position = rootPart.CFrame
-
                         local randomOffset = Vector3.new(rootPart.Position.x, math.random(ctx:GetSetting("MinY"), ctx:GetSetting("MaxY")), rootPart.Position.z)
+
                         if isFlicking then
                             local groundY = ctx:GetSetting("Calculate Ground") and getGroundLevel() or rootPart.Position.y
-                            desync.teleportPosition = Vector3.new(rootPart.Position.x,  groundY, rootPart.Position.z)
+                            desync.teleportPosition = Vector3.new(rootPart.Position.x, groundY, rootPart.Position.z)
                             if currentTime >= flickEnd then
                                 isFlicking = false
                                 nextFlick = currentTime + math.random(minWait, maxWait)
@@ -104,12 +103,14 @@ return {
                         end
 
                         rootPart.CFrame = CFrame.new(desync.teleportPosition)
-                        workspace.CurrentCamera.CameraSubject = desync_setback
+
+                        if isCameraFree() then
+                            workspace.CurrentCamera.CameraSubject = desync_setback
+                        end
 
                         RunService.RenderStepped:Wait()
 
                         desync_setback.CFrame = desync.old_position * CFrame.new(0, rootPart.Size.Y / 2 + 0.5, 0)
-
                         rootPart.CFrame = desync.old_position
 
                         if rootPart.Position.Y > ctx:GetSetting("MinY") - ctx:GetSetting("TickYBack") then
@@ -122,17 +123,16 @@ return {
                     end
                 end
             end))
-            workspace.CurrentCamera.CameraSubject = desync_setback
+
+            if isCameraFree() then
+                workspace.CurrentCamera.CameraSubject = desync_setback
+            end
         end
     end,
 
     OnDisable = function(ctx)
-        if ctx:GetSetting("Mode") == "Step" then
-            for _, conn in ipairs(_connections) do
-                conn:Disconnect()
-            end
-            _connections = {}
-            resetCamera()
-        end
+        for _, conn in ipairs(_connections) do conn:Disconnect() end
+        _connections = {}
+        resetCamera()
     end,
 }
