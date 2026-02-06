@@ -74,7 +74,7 @@ return {
 
     OnEnable = function(ctx)
         local playerGui = player:WaitForChild("PlayerGui")
-        screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
+        screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = -1 }, playerGui)
 
         activeNotifs = {}
         uiRefs = {}
