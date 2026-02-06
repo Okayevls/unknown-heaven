@@ -232,59 +232,98 @@ function HudMethods:renderStaffList(ctx)
 end
 
 function HudMethods:renderTargetHud(ctx)
+    -- Основная рамка
     local th = create("Frame", {
         Name = "TargetHud", Size = UDim2.fromOffset(200, 60), Position = UDim2.new(0.5, 50, 0.5, 50),
-        BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false, ClipsDescendants = true
+        BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
+        ClipsDescendants = true, BackgroundTransparency = 1 -- Начинаем с невидимого
     })
     uiRefs.TargetHud = th
-    applyStyle(th, 10); applyScaleDrag(th, bgGui)
+    local stroke = applyStyle(th, 10)
+    stroke.Transparency = 1 -- Скрываем обводку для анимации
+    applyScaleDrag(th, bgGui)
 
+    -- Ник цели
     local nameLabel = create("TextLabel", {
         Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -20, 0, 18),
         BackgroundTransparency = 1, Text = "Target Name", TextColor3 = Theme.Text,
-        Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = th
+        Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = th, TextTransparency = 1
     })
 
+    -- Полоска здоровья
     local healthBarBack = create("Frame", {
         Position = UDim2.fromOffset(10, 32), Size = UDim2.new(1, -20, 0, 8),
-        BackgroundColor3 = Theme.Stroke, Parent = th
+        BackgroundColor3 = Theme.Stroke, Parent = th, BackgroundTransparency = 1
     })
     create("UICorner", {CornerRadius = UDim.new(1, 0)}, healthBarBack)
 
     local healthBarFill = create("Frame", {
-        Size = UDim2.new(0.5, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = healthBarBack
+        Size = UDim2.new(0.5, 0, 1, 0), BackgroundColor3 = Theme.Accent,
+        Parent = healthBarBack, BackgroundTransparency = 1
     })
     create("UICorner", {CornerRadius = UDim.new(1, 0)}, healthBarFill)
 
+    -- Инфо
     local infoLabel = create("TextLabel", {
         Position = UDim2.fromOffset(10, 42), Size = UDim2.new(1, -20, 0, 14),
         BackgroundTransparency = 1, Text = "100 HP  •  0m", TextColor3 = Theme.SubText,
-        Font = Enum.Font.GothamMedium, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, Parent = th
+        Font = Enum.Font.GothamMedium, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = th, TextTransparency = 1
     })
 
-    table.insert(connections, RunService.RenderStepped:Connect(function()
-        if not ctx:GetSetting("TargetHud") then th.Visible = false return end
+    local isVisible = false -- Флаг текущего состояния
 
-        local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
+    -- Функция для плавной анимации прозрачности
+    local function setTargetHudVisible(visible)
+        if isVisible == visible then return end
+        isVisible = visible
+
+        local targetTransparency = visible and 0 or 1
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+        if visible then th.Visible = true end
+
+        -- Анимируем всё сразу
+        TweenService:Create(th, tweenInfo, {BackgroundTransparency = targetTransparency}):Play()
+        TweenService:Create(stroke, tweenInfo, {Transparency = targetTransparency}):Play()
+        TweenService:Create(nameLabel, tweenInfo, {TextTransparency = targetTransparency}):Play()
+        TweenService:Create(healthBarBack, tweenInfo, {BackgroundTransparency = targetTransparency}):Play()
+        TweenService:Create(healthBarFill, tweenInfo, {BackgroundTransparency = targetTransparency}):Play()
+        local lastTween = TweenService:Create(infoLabel, tweenInfo, {TextTransparency = targetTransparency})
+
+        lastTween:Play()
+        lastTween.Completed:Connect(function()
+            if not visible then th.Visible = false end
+        end)
+    end
+
+    table.insert(connections, RunService.RenderStepped:Connect(function()
+        if not ctx:GetSetting("TargetHud") then
+            setTargetHudVisible(false)
+            return
+        end
+
+        local target = ctx.Shared.SelectedTarget or ctx.Shared.RandomTarget
 
         if target and target.Character and target.Character:FindFirstChild("Humanoid") then
             local hum = target.Character.Humanoid
             local root = target.Character:FindFirstChild("HumanoidRootPart")
 
             if hum.Health > 0 then
-                th.Visible = true
+                setTargetHudVisible(true)
                 nameLabel.Text = target.DisplayName or target.Name
 
                 local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                TweenService:Create(healthBarFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(hpPercent, 1)}):Play()
+                TweenService:Create(healthBarFill, TweenInfo.new(0.25), {Size = UDim2.fromScale(hpPercent, 1)}):Play()
 
                 local dist = root and math.floor((root.Position - player.Character.HumanoidRootPart.Position).Magnitude) or 0
                 infoLabel.Text = string.format("%d HP  •  %dm", math.floor(hum.Health), dist)
             else
-                th.Visible = false
+                setTargetHudVisible(false)
             end
         else
-            th.Visible = false
+            setTargetHudVisible(false)
         end
     end))
 end
