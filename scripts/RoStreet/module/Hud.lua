@@ -41,9 +41,7 @@ local function applyScaleDrag(frame, targetGui)
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            -- Фиксируем позицию мыши
             dragStart = input.Position
-            -- Запоминаем AbsolutePosition (реальные пиксели на экране)
             startPos = frame.AbsolutePosition
         end
     end))
@@ -52,25 +50,19 @@ local function applyScaleDrag(frame, targetGui)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             local screen = targetGui.AbsoluteSize
-            local inset = GuiService:GetGuiInset() -- Те самые 36 пикселей
+            local inset = GuiService:GetGuiInset()
 
-            -- Вычисляем новую позицию в пикселях
-            -- startPos.X + delta.X — это где должен быть верхний левый угол
             local newX = startPos.X + delta.X
             local newY = startPos.Y + delta.Y
 
-            -- Если ScreenGui.IgnoreGuiInset = true, нам нужно прибавить inset обратно,
-            -- чтобы компенсировать сдвиг системы координат Roblox
             if targetGui.IgnoreGuiInset then
                 newY = newY + inset.Y
                 newX = newX + inset.X
             end
 
-            -- Учитываем AnchorPoint фрейма (чтобы он не прыгал центром к мышке)
             newX = newX + (frame.AbsoluteSize.X * frame.AnchorPoint.X)
             newY = newY + (frame.AbsoluteSize.Y * frame.AnchorPoint.Y)
 
-            -- Переводим в Scale
             frame.Position = UDim2.fromScale(
                     math.clamp(newX / screen.X, 0, 1),
                     math.clamp(newY / screen.Y, 0, 1)
@@ -113,7 +105,6 @@ end
 
 function HudMethods:renderStaffList(ctx)
     local ManualStaffList = {
-        ["polska_sigma21379"] = true,
         ["Builderman"] = true,
         ["ROBLOX"] = true,
     }
