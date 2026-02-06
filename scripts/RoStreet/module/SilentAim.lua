@@ -156,6 +156,8 @@ local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
     if not gun then return end
 
+    ctx.SharedTrash.IsFiring = true
+
     local ammo = gun:FindFirstChild("Ammo")
     if not ammo then return end
 
@@ -184,6 +186,10 @@ local function shoot(targetPlayer, ctx)
     end
 
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
+
+    task.defer(function()
+        ctx.SharedTrash.IsFiring = false
+    end)
 
     if ammo.Value == lastAmmoPerAmmoObject[ammo] then
         return
