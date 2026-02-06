@@ -83,14 +83,15 @@ end
 
 function HudMethods:renderStaffList(ctx)
     local sl = create("Frame", {
-        Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
+        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 85),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
-        Visible = ctx:GetSetting("StaffList")
+        Visible = ctx:GetSetting("StaffList"),
+        ClipsDescendants = true -- Чтобы элементы не вылезали при анимации
     })
     uiRefs.StaffList = sl
     applyStyle(sl, 10); applyScaleDrag(sl, bgGui)
 
-    create("TextLabel", {
+    local title = create("TextLabel", {
         Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online",
         TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl
     })
@@ -99,12 +100,76 @@ function HudMethods:renderStaffList(ctx)
         Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28),
         BackgroundTransparency = 1, Parent = sl
     })
-    create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, listFrame)
 
-    create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found",
-        TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = listFrame
-    })
+    local layout = create("UIListLayout", {
+        Padding = UDim.new(0, 4),
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        SortOrder = Enum.SortOrder.Name
+    }, listFrame)
+
+    -- ФУНКЦИЯ ОБНОВЛЕНИЯ ВЫСОТЫ
+    local function adjustHeight()
+        -- Берем высоту заголовка (28) + отступ (4) + высоту всего списка имен
+        local contentHeight = layout.AbsoluteContentSize.Y
+        local finalHeight = 28 + (contentHeight > 0 and contentHeight + 10 or 25)
+
+        TweenService:Create(sl, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+            Size = UDim2.fromOffset(170, finalHeight)
+        }):Play()
+    end
+
+    -- Следим за изменением размера списка автоматически
+    table.insert(connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(adjustHeight))
+
+    local function isStaff(p)
+        local data = p:FindFirstChild("PlayerData")
+        if data then
+            local isMod = data:FindFirstChild("IsModerator")
+            return isMod and isMod.Value == true
+        end
+        return false
+    end
+
+    local function updateList()
+        -- Очистка старых имен
+        for _, child in ipairs(listFrame:GetChildren()) do
+            if child:IsA("TextLabel") then child:Destroy() end
+        end
+
+        local found = false
+        for _, p in ipairs(Players:GetPlayers()) do
+            if isStaff(p) then
+                found = true
+                create("TextLabel", {
+                    Name = p.Name,
+                    Size = UDim2.new(0.9, 0, 0, 18),
+                    BackgroundTransparency = 1,
+                    Text = p.DisplayName or p.Name,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.GothamMedium,
+                    TextSize = 11,
+                    Parent = listFrame
+                })
+            end
+        end
+
+        if not found then
+            create("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found",
+                TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = listFrame
+            })
+        end
+    end
+
+    -- Ивенты
+    table.insert(connections, Players.PlayerAdded:Connect(function(p)
+        p:WaitForChild("PlayerData", 10)
+        updateList()
+    end))
+    table.insert(connections, Players.PlayerRemoving:Connect(updateList))
+
+    -- Первая отрисовка
+    task.spawn(updateList)
 end
 
 function HudMethods:renderNotifications(ctx)
