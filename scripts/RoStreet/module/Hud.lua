@@ -9,6 +9,7 @@ local screenGui = nil
 local elements = {}
 local connections = {}
 local activeNotifs = {}
+local uiRefs = {} -- Ссылки на объекты для быстрого доступа
 
 local Theme = {
     Panel = Color3.fromRGB(255, 255, 255),
@@ -17,6 +18,8 @@ local Theme = {
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
 }
+
+-- ========= Утилиты =========
 
 local function create(class, props, parent)
     local obj = Instance.new(class)
@@ -56,9 +59,11 @@ local function applyScaleDrag(frame)
     end))
 end
 
+-- ========= Модуль =========
+
 return {
     Name = "Hud",
-    Desc = "Показывает всякую информацию",
+    Desc = "Heaven HUD: Live Settings Update",
     Class = "Visuals",
     Category = "Visuals",
 
@@ -73,99 +78,115 @@ return {
     OnEnable = function(ctx)
         local playerGui = player:WaitForChild("PlayerGui")
         screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 100 }, playerGui)
+
         activeNotifs = {}
+        uiRefs = {}
 
-        if ctx:GetSetting("Watermark") then
-            local wm = create("Frame", { Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30), Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui })
-            applyStyle(wm, 6); applyScaleDrag(wm)
-            local textLabel = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Heaven • 00 FPS • 00:00", TextColor3 = Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm })
-            local smoothedFps = 60
-            table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                if dt > 0 then
-                    local currentFps = 1 / dt
-                    currentFps = math.clamp(currentFps, 0, 999)
-                    smoothedFps = smoothedFps + (currentFps - smoothedFps) * 0.015
-                end
+        -- 1. Watermark
+        local wm = create("Frame", {
+            Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
+            Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui,
+            Visible = ctx:GetSetting("Watermark")
+        })
+        uiRefs.Watermark = wm
+        applyStyle(wm, 6); applyScaleDrag(wm)
+        local wmLabel = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Heaven  •  00 FPS  •  00:00", TextColor3 = Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm })
 
-                local displayFps = math.floor(math.abs(smoothedFps))
-                local timeStr = os.date("%H:%M")
+        local smoothedFps = 60
+        table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+            if dt > 0 then
+                smoothedFps = smoothedFps + (math.clamp(1/dt, 0, 999) - smoothedFps) * 0.015
+            end
+            wmLabel.Text = string.format("Heaven  •  %d FPS  •  %s", math.floor(math.abs(smoothedFps)), os.date("%H:%M"))
+        end))
 
-                textLabel.Text = string.format("Heaven  •  %d FPS  •  %s", displayFps, timeStr)
-            end))
+        -- 2. Staff List
+        local sl = create("Frame", {
+            Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
+            BackgroundColor3 = Theme.Panel, Parent = screenGui,
+            Visible = ctx:GetSetting("StaffList")
+        })
+        uiRefs.StaffList = sl
+        applyStyle(sl, 10); applyScaleDrag(sl)
+        create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
+        local listFrame = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
+        create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, listFrame)
+        create("TextLabel", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found", TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = listFrame })
+
+        -- 3. Notifications
+        local notifyArea = create("Frame", {
+            Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0), Position = UDim2.new(1, -280, 0.92, 0),
+            AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, Parent = screenGui,
+            Visible = ctx:GetSetting("Notifications")
+        })
+        uiRefs.Notifications = notifyArea
+        create("UIListLayout", { VerticalAlignment = Enum.VerticalAlignment.Bottom, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, notifyArea)
+
+        local function spawnNotify(title, msg)
+            if not ctx:GetSetting("Notifications") then return end
+            local max = ctx:GetSetting("MaxNotifications") or 5
+            if #activeNotifs >= max then
+                local oldest = table.remove(activeNotifs, 1)
+                if oldest and oldest.Parent then oldest:Destroy() end
+            end
+            local n = create("Frame", { Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = Theme.Panel, ClipsDescendants = true, Parent = notifyArea })
+            applyStyle(n, 10)
+            create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
+            create("TextLabel", { Text = title, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
+            create("TextLabel", { Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
+            table.insert(activeNotifs, n)
+            n.Size = UDim2.new(1, 0, 0, 0)
+            TweenService:Create(n, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 54)}):Play()
+            task.delay(4, function()
+                if not n or not n.Parent then return end
+                local idx = table.find(activeNotifs, n); if idx then table.remove(activeNotifs, idx) end
+                local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
+                tw:Play(); tw.Completed:Connect(function() n:Destroy() end)
+            end)
         end
+        ctx.Shared.Notify = spawnNotify
 
-        if ctx:GetSetting("StaffList") then
-            local sl = create("Frame", { Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85), BackgroundColor3 = Theme.Panel, Parent = screenGui })
-            applyStyle(sl, 10); applyScaleDrag(sl)
-            create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
-            local list = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
-            create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, list)
-            create("TextLabel", { Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found", TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = list })
-        end
+        -- 4. Discord Ad
+        local adLabel = create("TextLabel", {
+            Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/heaven",
+            TextColor3 = Theme.Text, TextTransparency = 0.6, Font = Enum.Font.GothamBold, TextSize = 10,
+            Position = UDim2.fromOffset(200, 200), Parent = screenGui,
+            Visible = ctx:GetSetting("DiscordAd")
+        })
+        uiRefs.DiscordAd = adLabel
 
-        if ctx:GetSetting("Notifications") then
-            local notifyArea = create("Frame", { Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0), Position = UDim2.new(1, -280, 0.92, 0), AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, Parent = screenGui })
-            create("UIListLayout", { VerticalAlignment = Enum.VerticalAlignment.Bottom, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, notifyArea)
+        local vel = Vector2.new(75, 75)
+        local curX, curY = 200, 200
+        table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+            if not adLabel or not adLabel.Parent or not adLabel.Visible then return end
+            local screen = screenGui.AbsoluteSize
+            curX, curY = curX + (vel.X * dt), curY + (vel.Y * dt)
+            if curX <= 0 or curX + adLabel.AbsoluteSize.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) curX = math.clamp(curX, 0, screen.X - adLabel.AbsoluteSize.X) end
+            if curY <= 0 or curY + adLabel.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) curY = math.clamp(curY, 0, screen.Y - adLabel.AbsoluteSize.Y) end
+            adLabel.Position = UDim2.fromOffset(curX, curY)
+        end))
 
-            local function spawnNotify(title, msg)
-                local max = ctx:GetSetting("MaxNotifications") or 5
-
-                if #activeNotifs >= max then
-                    local oldest = table.remove(activeNotifs, 1)
-                    if oldest and oldest.Parent then
-                        oldest:Destroy()
+        
+        table.insert(connections, ctx.Changed:Connect(function(payload)
+            if payload.moduleName == ctx.Name and payload.kind == "Setting" then
+                local ref = uiRefs[payload.key]
+                if ref then
+                    ref.Visible = payload.value
+                    if payload.key == "Notifications" and payload.value == false then
+                        for _, n in ipairs(activeNotifs) do n:Destroy() end
+                        activeNotifs = {}
                     end
                 end
-
-                local n = create("Frame", { Name = "Notification", Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = Theme.Panel, ClipsDescendants = true, Parent = notifyArea })
-                applyStyle(n, 10)
-                create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
-                create("TextLabel", { Text = title, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
-                create("TextLabel", { Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
-
-                table.insert(activeNotifs, n)
-
-                n.Size = UDim2.new(1, 0, 0, 0)
-                TweenService:Create(n, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 54)}):Play()
-
-                task.delay(4, function()
-                    if not n or not n.Parent then return end
-                    local idx = table.find(activeNotifs, n)
-                    if idx then table.remove(activeNotifs, idx) end
-
-                    local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
-                    tw:Play()
-                    tw.Completed:Connect(function() n:Destroy() end)
-                end)
             end
+        end))
 
-            ctx.Shared.Notify = spawnNotify
-            spawnNotify("Heaven", "Notifications Limited to " .. ctx:GetSetting("MaxNotifications"))
-        end
-
-        if ctx:GetSetting("DiscordAd") then
-            local adLabel = create("TextLabel", { Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/heaven", TextColor3 = Theme.Text, TextTransparency = 0.6, Font = Enum.Font.GothamBold, TextSize = 10, Position = UDim2.fromOffset(200, 200), Parent = screenGui })
-            local vel = Vector2.new(75, 75)
-            local currentX, currentY = 200, 200
-            table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-                if not adLabel or not adLabel.Parent then return end
-                local screen = screenGui.AbsoluteSize
-                if screen.X <= 0 then return end
-                currentX, currentY = currentX + (vel.X * dt), currentY + (vel.Y * dt)
-                if currentX <= 0 then vel = Vector2.new(math.abs(vel.X), vel.Y) currentX = 0
-                elseif currentX + adLabel.AbsoluteSize.X >= screen.X then vel = Vector2.new(-math.abs(vel.X), vel.Y) currentX = screen.X - adLabel.AbsoluteSize.X end
-                if currentY <= 0 then vel = Vector2.new(vel.X, math.abs(vel.Y)) currentY = 0
-                elseif currentY + adLabel.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X, -math.abs(vel.Y)) currentY = screen.Y - adLabel.AbsoluteSize.Y end
-                adLabel.Position = UDim2.fromOffset(currentX, currentY)
-            end))
-        end
+        spawnNotify("Heaven", "Live Settings Enabled")
     end,
 
     OnDisable = function(ctx)
         ctx.Shared.Notify = nil
         for _, conn in ipairs(connections) do if conn then conn:Disconnect() end end
         for _, el in ipairs(elements) do if el then el:Destroy() end end
-        activeNotifs = {}
-        connections, elements, screenGui = {}, {}, nil
+        activeNotifs, uiRefs, connections, elements, screenGui = {}, {}, {}, {}, nil
     end,
 }
