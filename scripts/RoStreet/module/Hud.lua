@@ -232,15 +232,22 @@ function HudMethods:renderStaffList(ctx)
 end
 
 function HudMethods:renderTargetHud(ctx)
+    -- Основная рамка (Центрируем снизу)
     local th = create("Frame", {
-        Name = "TargetHud", Size = UDim2.fromOffset(210, 65), Position = UDim2.new(0.5, 50, 0.5, 50),
-        BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
-        BackgroundTransparency = 1, ClipsDescendants = true
+        Name = "TargetHud",
+        Size = UDim2.fromOffset(210, 65),
+        AnchorPoint = Vector2.new(0.5, 1), -- Точка привязки: центр-низ
+        Position = UDim2.new(0.5, 0, 0.88, 0), -- 88% высоты экрана (чуть выше низа)
+        BackgroundColor3 = Theme.Panel,
+        Parent = bgGui,
+        Visible = false,
+        BackgroundTransparency = 1,
+        ClipsDescendants = true
     })
     uiRefs.TargetHud = th
     local stroke = applyStyle(th, 10)
     stroke.Transparency = 1
-    applyScaleDrag(th, bgGui)
+    applyScaleDrag(th, bgGui) -- Drag всё еще работает, если захочешь переставить
 
     -- Ник
     local nameLabel = create("TextLabel", {
@@ -263,7 +270,7 @@ function HudMethods:renderTargetHud(ctx)
     })
     create("UICorner", {CornerRadius = UDim.new(1, 0)}, healthBarFill)
 
-    -- Инфо
+    -- Инфо (HP • Distance)
     local infoLabel = create("TextLabel", {
         Position = UDim2.fromOffset(12, 44), Size = UDim2.new(1, -24, 0, 14),
         BackgroundTransparency = 1, Text = "0 HP • 0m", TextColor3 = Theme.SubText,
@@ -274,6 +281,7 @@ function HudMethods:renderTargetHud(ctx)
     local isVisible = false
     local tInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
+    -- Функция анимации (пачка твинов)
     local function animate(targetTransparency)
         if targetTransparency == 0 then th.Visible = true end
 
@@ -298,6 +306,7 @@ function HudMethods:renderTargetHud(ctx)
             return
         end
 
+        -- Получаем цель из Shared (SelectedTarget или RandomTarget)
         local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
 
         if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
@@ -306,18 +315,19 @@ function HudMethods:renderTargetHud(ctx)
                 animate(0)
             end
 
-            -- Обновление стат
+            -- Обновление данных
             local hum = target.Character.Humanoid
             nameLabel.Text = target.DisplayName or target.Name
 
             local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-            TweenService:Create(healthBarFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(hpPercent, 1)}):Play()
+            TweenService:Create(healthBarFill, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {Size = UDim2.fromScale(hpPercent, 1)}):Play()
 
             local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
             local dist = (myRoot and targetRoot) and math.floor((myRoot.Position - targetRoot.Position).Magnitude) or 0
             infoLabel.Text = string.format("%d HP  •  %dm", math.floor(hum.Health), dist)
         else
+            -- Если цели нет или она умерла
             if isVisible then
                 isVisible = false
                 animate(1)
