@@ -233,58 +233,81 @@ end
 
 function HudMethods:renderTargetHud(ctx)
     local th = create("Frame", {
-        Name = "TargetHud", Size = UDim2.fromOffset(200, 50),
+        Name = "TargetHud", Size = UDim2.fromOffset(240, 90), -- Увеличили для читаемости
         AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.85, 0),
         BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
         BackgroundTransparency = 1, ClipsDescendants = true
     })
     uiRefs.TargetHud = th
-    local stroke = applyStyle(th, 8)
+    local stroke = applyStyle(th, 10)
     stroke.Transparency = 1
     applyScaleDrag(th, bgGui)
 
+    -- Ник
     local nameLabel = create("TextLabel", {
-        Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 16),
+        Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 18),
         BackgroundTransparency = 1, Text = "Target", TextColor3 = Theme.Text,
-        Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = 0, Parent = th, TextTransparency = 1
-    })
-    local distLabel = create("TextLabel", {
-        Position = UDim2.new(0, 12, 0, 6), Size = UDim2.new(1, -24, 0, 16),
-        BackgroundTransparency = 1, Text = "0m", TextColor3 = Theme.SubText,
-        Font = Enum.Font.GothamMedium, TextSize = 10, TextXAlignment = 2, Parent = th, TextTransparency = 1
+        Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = 0, Parent = th, TextTransparency = 1
     })
 
+    -- Полоска HP
     local hpBack = create("Frame", {
-        Position = UDim2.new(0, 12, 1, -12), Size = UDim2.new(1, -24, 0, 5),
-        BackgroundColor3 = Theme.Stroke, Parent = th, BackgroundTransparency = 1
+        Position = UDim2.fromOffset(12, 32), Size = UDim2.new(1, -24, 0, 12),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = th, BackgroundTransparency = 1
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}, hpBack)
+    create("UICorner", {CornerRadius = UDim.new(0, 4)}, hpBack)
 
     local hpFill = create("Frame", {
-        Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = hpBack, BackgroundTransparency = 1
+        Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(255, 80, 80),
+        Parent = hpBack, BackgroundTransparency = 1
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}, hpFill)
+    create("UICorner", {CornerRadius = UDim.new(0, 4)}, hpFill)
 
-    -- Броня (Тонкая линия поверх)
-    local apFill = create("Frame", {
-        Position = UDim2.new(0, 0, 0, -1), Size = UDim2.new(0, 0, 0, 2),
-        BackgroundColor3 = Color3.fromRGB(100, 210, 255), Parent = hpBack, BackgroundTransparency = 1,
-        ZIndex = 3
+    local hpText = create("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "100 HP",
+        TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = hpBack, TextTransparency = 1
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}, apFill)
+
+    -- Полоска Armor
+    local apBack = create("Frame", {
+        Position = UDim2.fromOffset(12, 48), Size = UDim2.new(1, -24, 0, 12),
+        BackgroundColor3 = Color3.fromRGB(40, 40, 40), Parent = th, BackgroundTransparency = 1
+    })
+    create("UICorner", {CornerRadius = UDim.new(0, 4)}, apBack)
+
+    local apFill = create("Frame", {
+        Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(80, 200, 255),
+        Parent = apBack, BackgroundTransparency = 1
+    })
+    create("UICorner", {CornerRadius = UDim.new(0, 4)}, apFill)
+
+    local apText = create("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "0 AP",
+        TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 10, Parent = apBack, TextTransparency = 1
+    })
+
+    -- Дистанция
+    local distLabel = create("TextLabel", {
+        Position = UDim2.fromOffset(12, 65), Size = UDim2.new(1, -24, 0, 16),
+        BackgroundTransparency = 1, Text = "Distance: 0m", TextColor3 = Theme.SubText,
+        Font = Enum.Font.GothamMedium, TextSize = 11, TextXAlignment = 0, Parent = th, TextTransparency = 1
+    })
 
     local isVisible = false
     local tInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
     local function animate(targetTrans)
         if targetTrans == 0 then th.Visible = true end
-        TweenService:Create(th, tInfo, {BackgroundTransparency = targetTrans == 0 and 0.05 or 1}):Play()
+        TweenService:Create(th, tInfo, {BackgroundTransparency = targetTrans == 0 and 0 or 1}):Play()
         TweenService:Create(stroke, tInfo, {Transparency = targetTrans}):Play()
         TweenService:Create(nameLabel, tInfo, {TextTransparency = targetTrans}):Play()
-        TweenService:Create(distLabel, tInfo, {TextTransparency = targetTrans == 0 and 0.4 or 1}):Play()
         TweenService:Create(hpBack, tInfo, {BackgroundTransparency = targetTrans}):Play()
         TweenService:Create(hpFill, tInfo, {BackgroundTransparency = targetTrans}):Play()
-        local last = TweenService:Create(apFill, tInfo, {BackgroundTransparency = targetTrans})
+        TweenService:Create(hpText, tInfo, {TextTransparency = targetTrans}):Play()
+        TweenService:Create(apBack, tInfo, {BackgroundTransparency = targetTrans}):Play()
+        TweenService:Create(apFill, tInfo, {BackgroundTransparency = targetTrans}):Play()
+        TweenService:Create(apText, tInfo, {TextTransparency = targetTrans}):Play()
+        local last = TweenService:Create(distLabel, tInfo, {TextTransparency = targetTrans})
         last:Play()
         if targetTrans == 1 then last.Completed:Connect(function() if not isVisible then th.Visible = false end end) end
     end
@@ -302,18 +325,27 @@ function HudMethods:renderTargetHud(ctx)
             local hum = target.Character.Humanoid
             nameLabel.Text = target.DisplayName or target.Name
 
+            -- Броня (внутри персонажа цели)
             local armorVal = 0
             local values = target.Character:FindFirstChild("Values")
             if values and values:FindFirstChild("Armor") then
                 armorVal = values.Armor.Value
             end
 
-            TweenService:Create(hpFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(math.clamp(hum.Health/hum.MaxHealth, 0, 1), 1)}):Play()
-            TweenService:Create(apFill, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.fromScale(math.clamp(armorVal/100, 0, 1), 1)}):Play()
+            -- Обновление полосок и текста
+            local hpRatio = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+            local apRatio = math.clamp(armorVal / 100, 0, 1)
+
+            TweenService:Create(hpFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(hpRatio, 1)}):Play()
+            TweenService:Create(apFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(apRatio, 1)}):Play()
+
+            hpText.Text = string.format("%d / %d HP", math.floor(hum.Health), math.floor(hum.MaxHealth))
+            apText.Text = string.format("%d AP", math.floor(armorVal))
 
             local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
             local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            distLabel.Text = (myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude).."m" or ""
+            local d = (myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude) or 0
+            distLabel.Text = "Distance: " .. d .. "m"
         else
             if isVisible then isVisible = false; animate(1) end
         end
