@@ -142,23 +142,44 @@ function HudMethods:renderStaffList(ctx)
 
     local function updateList()
         for _, child in ipairs(listFrame:GetChildren()) do
-            if child:IsA("TextLabel") then child:Destroy() end
+            if child:IsA("Frame") and child.Name ~= "UIListLayout" then
+                child:Destroy()
+            end
         end
 
         local found = false
         for _, p in ipairs(Players:GetPlayers()) do
             if isStaff(p) then
                 found = true
-                create("TextLabel", {
+
+                local row = create("Frame", {
                     Name = p.Name,
-                    Size = UDim2.new(0.9, 0, 0, 18),
+                    Size = UDim2.new(0.9, 0, 0, 20),
+                    BackgroundTransparency = 1,
+                    Parent = listFrame
+                })
+
+                create("TextLabel", {
+                    Size = UDim2.new(1, -15, 1, 0),
                     BackgroundTransparency = 1,
                     Text = p.DisplayName or p.Name,
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.GothamMedium,
                     TextSize = 11,
-                    Parent = listFrame
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    Parent = row
                 })
+
+                local dot = create("Frame", {
+                    Name = "Status",
+                    Size = UDim2.fromOffset(6, 6),
+                    Position = UDim2.new(1, -6, 0.5, -3),
+                    BackgroundColor3 = Color3.fromRGB(0, 255, 120),
+                    Parent = row
+                })
+                create("UICorner", {CornerRadius = UDim.new(1, 0)}, dot)
+                create("UIStroke", {Color = Color3.new(0,0,0), Transparency = 0.8, Thickness = 1}, dot)
             end
         end
 
@@ -174,7 +195,17 @@ function HudMethods:renderStaffList(ctx)
         p:WaitForChild("PlayerData", 10)
         updateList()
     end))
-    table.insert(connections, Players.PlayerRemoving:Connect(updateList))
+    table.insert(connections, Players.PlayerRemoving:Connect(function(p)
+        local row = listFrame:FindFirstChild(p.Name)
+        if row then
+            local dot = row:FindFirstChild("Status")
+            if dot then
+                dot.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+            end
+            task.wait(0.5)
+        end
+        updateList()
+    end))
     task.spawn(updateList)
 end
 
