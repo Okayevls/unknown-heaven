@@ -388,8 +388,13 @@ local ctx = makeCtx(self, categoryName, moduleName)
 
 -- Notify hud
 if GlobalSharedStorage.Notify then
-local statusText = if newValue then "was to enabled" else "was to disabled"
-GlobalSharedStorage.Notify(st.Definition.Name, statusText)
+    local statusText =
+    if newValue then
+    "was to enabled"
+    else
+    "was to disabled"
+
+    GlobalSharedStorage.Notify(st.Definition.Name, statusText)
 end
 --
 
