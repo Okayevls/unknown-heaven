@@ -106,7 +106,9 @@ return {
                     rootPart.CFrame = desync.old_position
                 else
                     rootPart.CFrame = CFrame.new(desync.teleportPosition)
+
                     RunService.Heartbeat:Wait()
+
                     rootPart.CFrame = desync.old_position
                 end
 

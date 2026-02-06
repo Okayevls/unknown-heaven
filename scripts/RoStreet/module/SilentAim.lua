@@ -139,7 +139,7 @@ local function shoot(targetPlayer, ctx)
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
-    local predicted = head.Position
+    local predicted, predictedVisuals = head.Position, head.Position
     if ctx:GetSetting("Resolver") then
         local v = root.Velocity
         predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
@@ -152,7 +152,7 @@ local function shoot(targetPlayer, ctx)
         lastAmmoPerAmmoObject[ammo] = ammo.Value
         if muzzle then
             local attach = muzzle:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", muzzle)
-            create3DTracer(attach, predicted)
+            create3DTracer(attach, predictedVisuals)
         end
     end
 end
@@ -232,7 +232,7 @@ return {
             if isShooting and target then shoot(target, ctx) end
 
             if isSpectating then
-                if not target or not target.Character or not target.Character:FindFirstChildOfClass("Humanoid") or target.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+                if not target or not target.Character or not target.Character:FindFirstChildOfClass("Humanoid") then
                     toggleSpectate(ctx)
                 end
             end
