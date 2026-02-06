@@ -141,24 +141,28 @@ function HudMethods:renderStaffList(ctx)
     end
 
     local function updateList()
+        -- 1. Безопасная очистка: удаляем только Frame (строки) и TextLabel (надписи)
+        -- НЕ трогаем UIListLayout и другие настройки контейнера
         for _, child in ipairs(listFrame:GetChildren()) do
-            if child:IsA("Frame") and child.Name ~= "UIListLayout" then
+            if child:IsA("Frame") or (child:IsA("TextLabel") and child.Name == "NoStaffLabel") then
                 child:Destroy()
             end
         end
 
-        local found = false
+        local foundCount = 0
         for _, p in ipairs(Players:GetPlayers()) do
             if isStaff(p) then
-                found = true
+                foundCount = foundCount + 1
 
+                -- Создаем строку для модератора
                 local row = create("Frame", {
                     Name = p.Name,
-                    Size = UDim2.new(0.9, 0, 0, 20),
+                    Size = UDim2.new(1, -10, 0, 20),
                     BackgroundTransparency = 1,
                     Parent = listFrame
                 })
 
+                -- Ник с защитой от вылезания
                 create("TextLabel", {
                     Size = UDim2.new(1, -15, 1, 0),
                     BackgroundTransparency = 1,
@@ -171,6 +175,7 @@ function HudMethods:renderStaffList(ctx)
                     Parent = row
                 })
 
+                -- Зеленая точка
                 local dot = create("Frame", {
                     Name = "Status",
                     Size = UDim2.fromOffset(6, 6),
@@ -179,9 +184,23 @@ function HudMethods:renderStaffList(ctx)
                     Parent = row
                 })
                 create("UICorner", {CornerRadius = UDim.new(1, 0)}, dot)
-                create("UIStroke", {Color = Color3.new(0,0,0), Transparency = 0.8, Thickness = 1}, dot)
             end
         end
+
+        -- 2. Если никого не нашли, создаем ОДНУ надпись с уникальным именем
+        if foundCount == 0 then
+            create("TextLabel", {
+                Name = "NoStaffLabel", -- Даем имя, чтобы легко находить и удалять
+                Size = UDim2.new(1, 0, 0, 20),
+                BackgroundTransparency = 1,
+                Text = "No staff found",
+                TextColor3 = Theme.SubText,
+                Font = Enum.Font.GothamMedium,
+                TextSize = 11,
+                Parent = listFrame
+            })
+        end
+    end
 
         if not found then
             create("TextLabel", {
