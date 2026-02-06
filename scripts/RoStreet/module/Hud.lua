@@ -221,12 +221,28 @@ function HudMethods:renderTargetHud(ctx)
 
             local isRag = char:GetAttribute("Ragdoll")
             if isRag then
-                if not lastRag then ragTime = 3.5 end
-                ragTime = math.max(0, ragTime - dt)
-                ragLabel.Text = string.format("STUNNED: %.1fs %s", ragTime, hum.Health >= 30 and "(RECOVERING)" or "")
-                ragLabel.TextColor3 = hum.Health >= 30 and Color3.new(0.4, 1, 0.4) or Color3.fromRGB(255, 150, 50)
-            else ragLabel.Text = "" end
-            lastRag = isRag
+                ragLabel.Visible = true
+                local currentHp = hum.Health
+
+                if currentHp < 30 then
+                    -- РАСЧЕТ: Сколько HP осталось до 30
+                    local hpNeeded = 30 - currentHp
+
+                    -- СКОРОСТЬ: Укажи здесь, сколько HP в секунду регенится в твоей игре
+                    -- Если 2 HP в сек:
+                    local regenRate = 2
+                    local secondsLeft = hpNeeded / regenRate
+
+                    ragLabel.Text = string.format("WAKING UP IN: %.1fs", secondsLeft)
+                    ragLabel.TextColor3 = Color3.fromRGB(255, 150, 50) -- Оранжевый
+                else
+                    -- Если уже больше 30 HP, значит он встанет в любой момент (серверный тик)
+                    ragLabel.Text = "WAKING UP NOW..."
+                    ragLabel.TextColor3 = Color3.fromRGB(100, 255, 100) -- Зеленый
+                end
+            else
+                ragLabel.Visible = false
+            end
 
             local av = 0
             local vals = char:FindFirstChild("Values")
@@ -242,25 +258,6 @@ function HudMethods:renderTargetHud(ctx)
             distLabel.Text = "Distance: " .. ((myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude) or 0) .. "m"
         else if isVisible then isVisible = false animate(1) end end
     end))
-end
-
-function HudMethods:renderArrayList(ctx)
-    local al = create("Frame", { Name = "ArrayList", Size = UDim2.new(0, 200, 0.6, 0), Position = UDim2.new(1, -10, 0, 50), BackgroundTransparency = 1, Parent = bgGui })
-    local layout = create("UIListLayout", { Padding = UDim.new(0, 3), HorizontalAlignment = 2, SortOrder = 2 }, al)
-
-    local function update()
-        for _, c in ipairs(al:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end
-        local active = {}
-        for _, mod in ipairs(ctx:GetModules()) do if mod.Enabled and mod.Name ~= "Hud" then table.insert(active, mod.Name) end end
-        table.sort(active, function(a, b) return #a > #b end)
-        for _, name in ipairs(active) do
-            local l = create("TextLabel", { Size = UDim2.fromOffset(200, 18), BackgroundTransparency = 1, Text = name .. " ", TextColor3 = Theme.Accent, Font = 18, TextSize = 14, TextXAlignment = 2, Parent = al })
-            l.Position = UDim2.new(1, 20, 0, 0)
-            TweenService:Create(l, TweenInfo.new(0.3, 6), {Position = UDim2.new(0,0,0,0)}):Play()
-        end
-    end
-    table.insert(connections, ctx.Changed:Connect(update))
-    task.spawn(update)
 end
 
 function HudMethods:renderNotifications(ctx)
@@ -320,7 +317,6 @@ return {
     Settings = {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
-        { Type = "Boolean", Name = "ArrayList", Default = true },
         { Type = "Boolean", Name = "TargetHud", Default = true },
         { Type = "Boolean", Name = "Notifications", Default = true },
         { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 12, Step = 1 },
@@ -335,7 +331,6 @@ return {
         HudMethods:renderStaffList(ctx)
         HudMethods:renderNotifications(ctx)
         HudMethods:renderTargetHud(ctx)
-        HudMethods:renderArrayList(ctx)
         HudMethods:renderDiscordAd(ctx)
 
         table.insert(connections, ctx.Changed:Connect(function(p)
