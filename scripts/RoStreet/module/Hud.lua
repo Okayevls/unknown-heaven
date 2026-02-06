@@ -9,7 +9,7 @@ local screenGui = nil
 local elements = {}
 local connections = {}
 local activeNotifs = {}
-local uiRefs = {} -- Ссылки на объекты для быстрого доступа
+local uiRefs = {}
 
 local Theme = {
     Panel = Color3.fromRGB(255, 255, 255),
@@ -18,8 +18,6 @@ local Theme = {
     Text = Color3.fromRGB(20, 35, 55),
     SubText = Color3.fromRGB(95, 120, 155),
 }
-
--- ========= Утилиты =========
 
 local function create(class, props, parent)
     local obj = Instance.new(class)
@@ -59,13 +57,12 @@ local function applyScaleDrag(frame)
     end))
 end
 
--- ========= Модуль =========
-
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Live Settings Update",
+    Desc = "Показывает всякие визуальные панели",
     Class = "Visuals",
     Category = "Visuals",
+    AlwaysEnabled = true,
 
     Settings = {
         { Type = "Boolean", Name = "Watermark", Default = true },
@@ -166,7 +163,7 @@ return {
             adLabel.Position = UDim2.fromOffset(curX, curY)
         end))
 
-        
+
         table.insert(connections, ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
                 local ref = uiRefs[payload.key]
