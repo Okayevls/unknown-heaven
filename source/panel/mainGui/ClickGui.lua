@@ -49,7 +49,7 @@ screenGui.Name = "HeavenGui"
 screenGui.Parent = playerGui
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.DisplayOrder = 2147483645
+screenGui.DisplayOrder = 2147483646
 
 local Theme = {
     Bg = Color3.fromRGB(245, 250, 255),
