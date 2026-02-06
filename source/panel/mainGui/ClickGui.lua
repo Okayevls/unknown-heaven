@@ -304,7 +304,7 @@ local settingsCloseOverlay = mk("TextButton", {
     Visible=false,
     Active=false,
     Size=UDim2.fromScale(1,1),
-    ZIndex = 1
+    ZIndex = 2
 }, content)
 
 local settingsPane = mk("Frame", {
@@ -312,12 +312,12 @@ local settingsPane = mk("Frame", {
     BackgroundColor3=Theme.Panel2,
     AnchorPoint=Vector2.new(1,0),
     Position=UDim2.new(1,0,0,0),
-
     Size=UDim2.new(0, 300, 1, 0),
-
     Visible=false,
     Active = true,
+    ZIndex = 10
 }, content)
+
 addCorner(settingsPane, Theme.RoundSmall)
 addStroke(settingsPane, 0)
 addPadding(settingsPane, 10)
@@ -376,14 +376,13 @@ local modulesArea = mk("ScrollingFrame", {
     Name="ModulesArea",
     BackgroundTransparency=1,
     Size=UDim2.new(1, -312, 1, 0),
-
     BorderSizePixel = 0,
     ScrollBarThickness = 6,
     ScrollingDirection = Enum.ScrollingDirection.Y,
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0,0,0,0),
-
     ClipsDescendants = true,
+    ZIndex = 5
 }, content)
 
 addList(modulesArea, 10)
@@ -1027,16 +1026,12 @@ local function moduleCard(tabName, mName, desc)
     card.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
             local settings = st.Definition.Settings
-            if not settings or #settings == 0 then
-                return
-            end
+            if not settings or #settings == 0 then return end
 
-            if settingsPane.Visible then
-                if currentSettings and currentSettings.tab == tabName and currentSettings.module == mName then
-                    closeSettings()
-                else
-                    renderSettings(tabName, mName)
-                end
+            if settingsPane.Visible and currentSettings
+                    and currentSettings.tab == tabName
+                    and currentSettings.module == mName then
+                closeSettings()
             else
                 renderSettings(tabName, mName)
             end
