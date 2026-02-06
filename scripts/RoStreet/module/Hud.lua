@@ -286,7 +286,7 @@ function HudMethods:renderTargetHud(ctx)
         end
 
         -- Проверка наличия цели в Shared
-        local target = ctx.Shared.SelectedTarget or ctx.Shared.RandomTarget
+        local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
 
         -- Если цель есть и она жива
         if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
