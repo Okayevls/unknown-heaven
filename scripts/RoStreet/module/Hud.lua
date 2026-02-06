@@ -156,7 +156,7 @@ end
 
 function HudMethods:renderDiscordAd(ctx)
     local adLabel = create("TextLabel", {
-        Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/heaven",
+        Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/R7ABPb2f",
         TextColor3 = Theme.Text, TextTransparency = 0.4, Font = Enum.Font.GothamBold, TextSize = 11,
         Position = UDim2.fromOffset(200, 200), Parent = fgGui,
         Visible = ctx:GetSetting("DiscordAd"), ZIndex = 9999
@@ -177,7 +177,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Structured Module",
+    Desc = "Показывает всякую информацию на экране",
     Class = "Visuals",
     Category = "Visuals",
     AlwaysEnabled = true,
