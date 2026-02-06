@@ -256,7 +256,7 @@ return {
     },
 
     OnEnable = function(ctx)
-        table.insert(_connections, ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1))
+        ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1)
 
         table.insert(_connections, UserInputService.InputBegan:Connect(function(input, processed)
             local selectTargetBind = getKeyCode(ctx:GetSetting("Select Target"))
@@ -319,6 +319,7 @@ return {
         isShooting = false
         randomTarget = nil
         selectedTarget = nil
+        ContextActionService:UnbindAction("BlockShoot")
         for _, conn in ipairs(_connections) do
             conn:Disconnect()
         end
