@@ -401,8 +401,8 @@ end
 
 local function closeSettings()
     settingsPane.Visible = false
-    settingsCloseOverlay.Visible = false
-    settingsCloseOverlay.Active = false
+    --settingsCloseOverlay.Visible = false
+    --settingsCloseOverlay.Active = false
     currentSettings = nil
     clearSettingsUI()
 end
@@ -926,8 +926,8 @@ local function renderSettings(tab, moduleName)
 
     settingsPane.Visible = true
 
-    settingsCloseOverlay.Visible = true
-    settingsCloseOverlay.Active = true
+    --settingsCloseOverlay.Visible = true
+    --settingsCloseOverlay.Active = true
 
     settingsTitle.Text = ("Settings • %s"):format(moduleName)
     --settingsSub.Text = State.Modules[tab][moduleName].Desc
@@ -1698,12 +1698,23 @@ screenGui.Destroying:Connect(function()
     restoreMouse()
 end)
 
+local function isMouseInsideSettingsPane()
+    local m = UserInputService:GetMouseLocation()
+    local p = settingsPane.AbsolutePosition
+    local s = settingsPane.AbsoluteSize
+
+    return (m.X >= p.X and m.X <= p.X + s.X and
+            m.Y >= p.Y and m.Y <= p.Y + s.Y)
+end
+
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe or UserInputService:GetFocusedTextBox() then
-        return
-    end
-    if input.KeyCode == Enum.KeyCode.Insert then
-        toggleUI(not uiVisible)
+    if gpe then return end
+    if not settingsPane.Visible then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if not isMouseInsideSettingsPane() then
+            closeSettings()
+        end
     end
 end)
 
