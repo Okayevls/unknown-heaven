@@ -103,132 +103,100 @@ function HudMethods:renderWatermark(ctx)
     end))
 end
 
-function HudMethods:renderStaffList(ctx)
-    local ManualStaffList = {
-        ["Builderman"] = true,
-        ["ROBLOX"] = true,
-    }
-
-    local sl = create("Frame", {
-        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 300),
-        BackgroundColor3 = Theme.Panel, Parent = bgGui,
-        Visible = ctx:GetSetting("StaffList"),
-        ClipsDescendants = true
+function HudMethods:renderTargetHud(ctx)
+    local th = create("Frame", {
+        Name = "TargetHud", Size = UDim2.fromOffset(200, 52), -- Более узкий и аккуратный
+        AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.85, 0),
+        BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
+        BackgroundTransparency = 1, ClipsDescendants = true
     })
-    uiRefs.StaffList = sl
-    applyStyle(sl, 10); applyScaleDrag(sl, bgGui)
+    uiRefs.TargetHud = th
+    local stroke = applyStyle(th, 8)
+    stroke.Transparency = 1
+    applyScaleDrag(th, bgGui)
 
-    local title = create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online",
-        TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl
+    -- Ник (слева) + Дистанция (справа полупрозрачно)
+    local nameLabel = create("TextLabel", {
+        Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 16),
+        BackgroundTransparency = 1, Text = "Target", TextColor3 = Theme.Text,
+        Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = 0, Parent = th, TextTransparency = 1
     })
-
-    local listFrame = create("Frame", {
-        Name = "ListFrame",
-        Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28),
-        BackgroundTransparency = 1, Parent = sl
+    local distLabel = create("TextLabel", {
+        Position = UDim2.new(0, 12, 0, 8), Size = UDim2.new(1, -24, 0, 16),
+        BackgroundTransparency = 1, Text = "0m", TextColor3 = Theme.SubText,
+        Font = Enum.Font.GothamMedium, TextSize = 11, TextXAlignment = 2, Parent = th, TextTransparency = 1
     })
 
-    create("UIPadding", {
-        PaddingLeft = UDim.new(0, 10),
-        PaddingRight = UDim.new(0, 10)
-    }, listFrame)
+    -- Основной контейнер для баров
+    local barsCont = create("Frame", {
+        Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 10),
+        BackgroundTransparency = 1, Parent = th
+    })
 
-    local layout = create("UIListLayout", {
-        Padding = UDim.new(0, 4),
-        HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        SortOrder = Enum.SortOrder.Name
-    }, listFrame)
+    -- Хелсбар (снизу)
+    local hpBack = create("Frame", {
+        Position = UDim2.new(0, 0, 1, -4), Size = UDim2.new(1, 0, 0, 4),
+        BackgroundColor3 = Theme.Stroke, Parent = barsCont, BackgroundTransparency = 1
+    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}, hpBack)
+    local hpFill = create("Frame", {
+        Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = hpBack, BackgroundTransparency = 1
+    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}, hpFill)
 
-    local function adjustHeight()
-        local contentHeight = layout.AbsoluteContentSize.Y
-        local finalHeight = 28 + (contentHeight > 0 and contentHeight + 10 or 25)
+    -- Броня (тонкая линия ПРЯМО НАД хелсбаром)
+    local apFill = create("Frame", {
+        Position = UDim2.new(0, 0, 1, -7), Size = UDim2.new(0, 0, 0, 2), -- Всего 2 пикселя высота
+        BackgroundColor3 = Color3.fromRGB(100, 200, 255), Parent = barsCont, BackgroundTransparency = 1,
+        ZIndex = 2
+    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}, apFill)
 
-        TweenService:Create(sl, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-            Size = UDim2.fromOffset(170, finalHeight)
-        }):Play()
+    local isVisible = false
+    local tInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+    local function animate(targetTrans)
+        if targetTrans == 0 then th.Visible = true end
+        TweenService:Create(th, tInfo, {BackgroundTransparency = targetTrans == 0 and 0.1 or 1}):Play()
+        TweenService:Create(stroke, tInfo, {Transparency = targetTrans}):Play()
+        TweenService:Create(nameLabel, tInfo, {TextTransparency = targetTrans}):Play()
+        TweenService:Create(distLabel, tInfo, {TextTransparency = targetTrans == 0 and 0.4 or 1}):Play()
+        TweenService:Create(hpBack, tInfo, {BackgroundTransparency = targetTrans}):Play()
+        TweenService:Create(hpFill, tInfo, {BackgroundTransparency = targetTrans}):Play()
+        local last = TweenService:Create(apFill, tInfo, {BackgroundTransparency = targetTrans})
+        last:Play()
+        if targetTrans == 1 then last.Completed:Connect(function() if not isVisible then th.Visible = false end end) end
     end
 
-    table.insert(connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(adjustHeight))
-
-    local function isStaff(p)
-        if ManualStaffList[p.Name] then return true end
-        local data = p:FindFirstChild("PlayerData")
-        local isMod = data and data:FindFirstChild("IsModerator")
-        return isMod and isMod.Value == true
-    end
-
-    local function updateList()
-        for _, child in ipairs(listFrame:GetChildren()) do
-            if child:IsA("Frame") or (child:IsA("TextLabel") and child.Name == "NoStaffLabel") then
-                child:Destroy()
-            end
+    table.insert(connections, RunService.Heartbeat:Connect(function()
+        if not ctx:GetSetting("TargetHud") then
+            if isVisible then isVisible = false; animate(1) end
+            return
         end
 
-        local foundCount = 0
-        for _, p in ipairs(Players:GetPlayers()) do
-            if isStaff(p) then
-                foundCount = foundCount + 1
-                local row = create("Frame", {
-                    Name = p.Name,
-                    Size = UDim2.new(1, 0, 0, 20),
-                    BackgroundTransparency = 1,
-                    Parent = listFrame
-                })
+        local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
+            if not isVisible then isVisible = true; animate(0) end
 
-                create("TextLabel", {
-                    Size = UDim2.new(1, -15, 1, 0),
-                    BackgroundTransparency = 1,
-                    Text = p.DisplayName or p.Name,
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.GothamMedium,
-                    TextSize = 11,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
-                    Parent = row
-                })
+            local hum = target.Character.Humanoid
+            nameLabel.Text = target.DisplayName or target.Name
 
-                local dot = create("Frame", {
-                    Name = "Status",
-                    Size = UDim2.fromOffset(6, 6),
-                    Position = UDim2.new(1, -6, 0.5, -3),
-                    BackgroundColor3 = Color3.fromRGB(0, 255, 120),
-                    Parent = row
-                })
-                create("UICorner", {CornerRadius = UDim.new(1, 0)}, dot)
-            end
+            -- Получаем броню
+            local armor = 0
+            local valFolder = workspace:FindFirstChild("Dounibei") and workspace.Dounibei:FindFirstChild("Values")
+            if valFolder and valFolder:FindFirstChild("Armor") then armor = valFolder.Armor.Value end
+
+            -- Плавное обновление полосок
+            TweenService:Create(hpFill, TweenInfo.new(0.3), {Size = UDim2.fromScale(math.clamp(hum.Health/hum.MaxHealth, 0, 1), 1)}):Play()
+            TweenService:Create(apFill, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.fromScale(math.clamp(armor/100, 0, 1), 1)}):Play()
+
+            local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            distLabel.Text = (myRoot and tRoot) and math.floor((myRoot.Position - tRoot.Position).Magnitude).."m" or "0m"
+        else
+            if isVisible then isVisible = false; animate(1) end
         end
-
-        if foundCount == 0 then
-            create("TextLabel", {
-                Name = "NoStaffLabel",
-                Size = UDim2.new(1, 0, 0, 20),
-                BackgroundTransparency = 1,
-                Text = "No staff found",
-                TextColor3 = Theme.SubText,
-                Font = Enum.Font.GothamMedium,
-                TextSize = 11,
-                Parent = listFrame
-            })
-        end
-    end
-
-    table.insert(connections, Players.PlayerAdded:Connect(function(p)
-        p:WaitForChild("PlayerData", 10)
-        updateList()
     end))
-
-    table.insert(connections, Players.PlayerRemoving:Connect(function(p)
-        local row = listFrame:FindFirstChild(p.Name)
-        if row then
-            local dot = row:FindFirstChild("Status")
-            if dot then dot.BackgroundColor3 = Color3.fromRGB(255, 60, 60) end
-            task.wait(0.5)
-        end
-        updateList()
-    end))
-
-    task.spawn(updateList)
 end
 
 function HudMethods:renderTargetHud(ctx)
