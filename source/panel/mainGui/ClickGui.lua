@@ -49,6 +49,7 @@ screenGui.Name = "HeavenGui"
 screenGui.Parent = playerGui
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.DisplayOrder = 2147483645
 
 local Theme = {
     Bg = Color3.fromRGB(245, 250, 255),
@@ -1695,7 +1696,9 @@ screenGui.Destroying:Connect(function()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
+    if gpe or UserInputService:GetFocusedTextBox() then
+        return
+    end
     if input.KeyCode == Enum.KeyCode.Insert then
         toggleUI(not uiVisible)
     end
