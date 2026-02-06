@@ -87,7 +87,7 @@ return {
                         isFlicking = true
                         flickEnd = currentTime + flickDuration
                     end
-                    local forceGround = ctx.Shared and ctx.Shared.IsFiring
+                    local forceGround = ctx.SharedTrash and ctx.SharedTrash.IsFiring
                     if rootPart then
                         desync.old_position = rootPart.CFrame
 

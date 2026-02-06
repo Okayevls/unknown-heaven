@@ -156,8 +156,6 @@ local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
     if not gun then return end
 
-    ctx.SharedTrash.IsFiring = true
-
     local ammo = gun:FindFirstChild("Ammo")
     if not ammo then return end
 
@@ -183,6 +181,17 @@ local function shoot(targetPlayer, ctx)
         muzzle = gun.Main.Front
     elseif gun:FindFirstChild("Muzzle") then
         muzzle = gun.Muzzle
+    end
+
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {char, LocalPlayer.Character, workspace.CurrentCamera}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+    local ceilingCheck = workspace:Raycast(head.Position, Vector3.new(0, 300, 0), rayParams)
+    if ceilingCheck then
+        ctx.Shared.IsFiring = true
+    else
+        ctx.Shared.IsFiring = false
     end
 
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
