@@ -250,7 +250,7 @@ return {
                 shoot(target, ctx)
             end
 
-            if isSpectating and (not target or not target.Character or not target.Character:FindFirstChild("Humanoid") or target.Character.Humanoid.Health <= 0) then
+            if isSpectating and (not target or not target.Character or not target.Character:FindFirstChild("Humanoid")) then
                 toggleSpectate()
             end
 
