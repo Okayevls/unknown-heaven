@@ -291,6 +291,12 @@ Settings = settings,
 Definition = def,
 }
 
+if def.AlwaysEnabled then
+task.defer(function()
+self:SetEnabled(categoryName, def.Name, true)
+end)
+end
+
 self._ChangedEvent:Fire({
 kind = "Register",
 category = categoryName,
