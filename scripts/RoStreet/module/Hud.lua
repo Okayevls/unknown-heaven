@@ -81,12 +81,18 @@ function HudMethods:renderWatermark(ctx)
     end))
 end
 
+local ManualStaffList = {
+    ["Lobo1dr"] = true,
+    ["Builderman"] = true,
+    ["ROBLOX"] = true,
+}
+
 function HudMethods:renderStaffList(ctx)
     local sl = create("Frame", {
         Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 85),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
         Visible = ctx:GetSetting("StaffList"),
-        ClipsDescendants = true -- Чтобы элементы не вылезали при анимации
+        ClipsDescendants = true
     })
     uiRefs.StaffList = sl
     applyStyle(sl, 10); applyScaleDrag(sl, bgGui)
@@ -107,9 +113,7 @@ function HudMethods:renderStaffList(ctx)
         SortOrder = Enum.SortOrder.Name
     }, listFrame)
 
-    -- ФУНКЦИЯ ОБНОВЛЕНИЯ ВЫСОТЫ
     local function adjustHeight()
-        -- Берем высоту заголовка (28) + отступ (4) + высоту всего списка имен
         local contentHeight = layout.AbsoluteContentSize.Y
         local finalHeight = 28 + (contentHeight > 0 and contentHeight + 10 or 25)
 
@@ -118,20 +122,25 @@ function HudMethods:renderStaffList(ctx)
         }):Play()
     end
 
-    -- Следим за изменением размера списка автоматически
     table.insert(connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(adjustHeight))
 
     local function isStaff(p)
+        if ManualStaffList[p.Name] then
+            return true
+        end
+
         local data = p:FindFirstChild("PlayerData")
         if data then
             local isMod = data:FindFirstChild("IsModerator")
-            return isMod and isMod.Value == true
+            if isMod and isMod.Value == true then
+                return true
+            end
         end
+
         return false
     end
 
     local function updateList()
-        -- Очистка старых имен
         for _, child in ipairs(listFrame:GetChildren()) do
             if child:IsA("TextLabel") then child:Destroy() end
         end
@@ -161,14 +170,11 @@ function HudMethods:renderStaffList(ctx)
         end
     end
 
-    -- Ивенты
     table.insert(connections, Players.PlayerAdded:Connect(function(p)
         p:WaitForChild("PlayerData", 10)
         updateList()
     end))
     table.insert(connections, Players.PlayerRemoving:Connect(updateList))
-
-    -- Первая отрисовка
     task.spawn(updateList)
 end
 
