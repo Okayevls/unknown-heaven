@@ -60,7 +60,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Heaven HUD: Split Z-Index Logic",
+    Desc = "Показывает всякую полезную информацию",
     Class = "Visuals",
     Category = "Visuals",
     AlwaysEnabled = true,
