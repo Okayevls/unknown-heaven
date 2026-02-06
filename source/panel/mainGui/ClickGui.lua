@@ -1608,6 +1608,19 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 
     if activeBindTarget then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if activeBindTarget.settingName then
+                moduleMgr:SetSetting(activeBindTarget.tab, activeBindTarget.moduleName, activeBindTarget.settingName, nil)
+            else
+                setBind(activeBindTarget.tab, activeBindTarget.moduleName, nil)
+            end
+
+            activeBindTarget.label.Text = "None"
+            tween(activeBindTarget.button, 0.10, {BackgroundColor3 = Theme.Panel, TextColor3 = Theme.Text})
+            activeBindTarget = nil
+            return
+        end
+
         local bind = inputToBind(input)
         if bind or isDeleteBindInput(input) then
             if activeBindTarget.settingName then
