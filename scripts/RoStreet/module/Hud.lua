@@ -181,12 +181,14 @@ function HudMethods:renderTargetHud(ctx)
             local hum = target.Character.Humanoid
             nameLabel.Text = target.DisplayName or target.Name
 
-            -- Получаем броню
             local armor = 0
-            local valFolder = workspace:FindFirstChild("Dounibei") and workspace.Dounibei:FindFirstChild("Values")
-            if valFolder and valFolder:FindFirstChild("Armor") then armor = valFolder.Armor.Value end
+            local char = target.Character
+            local values = char and char:FindFirstChild("Values")
 
-            -- Плавное обновление полосок
+            if values and values:FindFirstChild("Armor") then
+                armor = values.Armor.Value
+            end
+            
             TweenService:Create(hpFill, TweenInfo.new(0.3), {Size = UDim2.fromScale(math.clamp(hum.Health/hum.MaxHealth, 0, 1), 1)}):Play()
             TweenService:Create(apFill, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.fromScale(math.clamp(armor/100, 0, 1), 1)}):Play()
 
