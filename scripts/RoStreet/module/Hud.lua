@@ -34,24 +34,32 @@ end
 
 local function applyScaleDrag(frame, targetGui)
     local dragging, dragStart, startPos = false, nil, nil
+
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging, dragStart, startPos = true, input.Position, frame.Position
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
         end
     end))
+
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             local screen = targetGui.AbsoluteSize
-            local deltaScaleX, deltaScaleY = delta.X / screen.X, delta.Y / screen.Y
+            local deltaScaleX = delta.X / screen.X
+            local deltaScaleY = delta.Y / screen.Y
             frame.Position = UDim2.fromScale(
-                    math.clamp(startPos.X.Scale + deltaScaleX, (frame.Size.X.Offset/screen.X)*frame.AnchorPoint.X, 1-((frame.Size.X.Offset/screen.X)*(1-frame.AnchorPoint.X))),
-                    math.clamp(startPos.Y.Scale + deltaScaleY, (frame.Size.Y.Offset/screen.Y)*frame.AnchorPoint.Y, 1-((frame.Size.Y.Offset/screen.Y)*(1-frame.AnchorPoint.Y)))
+                    math.clamp(startPos.X.Scale + deltaScaleX, 0, 1),
+                    math.clamp(startPos.Y.Scale + deltaScaleY, 0, 1)
             )
         end
     end))
+
     table.insert(connections, UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
     end))
 end
 
