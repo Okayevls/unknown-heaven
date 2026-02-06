@@ -189,9 +189,10 @@ local function shoot(targetPlayer, ctx)
 
     local ceilingCheck = workspace:Raycast(head.Position, Vector3.new(0, 300, 0), rayParams)
     if ceilingCheck then
-        ctx.Shared.IsFiring = true
+        ctx.SharedTrash.IsFiring = true
+        RunService.Heartbeat:Wait()
     else
-        ctx.Shared.IsFiring = false
+        ctx.SharedTrash.IsFiring = false
     end
 
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
@@ -256,6 +257,7 @@ return {
 
     OnEnable = function(ctx)
         table.insert(_connections, ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1))
+
         table.insert(_connections, UserInputService.InputBegan:Connect(function(input, processed)
             local selectTargetBind = getKeyCode(ctx:GetSetting("Select Target"))
             local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
