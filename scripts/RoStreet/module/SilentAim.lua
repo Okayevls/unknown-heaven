@@ -5,13 +5,11 @@ local ContextActionService = game:GetService("ContextActionService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
 local randomTarget = nil
 local selectedTarget = nil
 local line = nil
 local isShooting = false
-local isSpectating = false
 
 local SupportedWeapons = {
     ["AW1"] = true, ["Ak"] = true, ["Barrett"] = true, ["Deagle"] = true, ["Double Barrel"] = true, ["Draco"] = true,
@@ -19,19 +17,16 @@ local SupportedWeapons = {
     ["Rpg"] = true, ["Silencer"] = true, ["Spas"] = true, ["Taser"] = true, ["Tec"] = true, ["Ump"] = true
 }
 
-local function getKeyCode(bind)
-    if not bind then return nil end
-    return (bind.kind == "KeyCode") and bind.code or nil
-end
-
 local function getEquippedWeapon()
     local char = LocalPlayer.Character
     if not char then return nil end
+
     for name, _ in pairs(SupportedWeapons) do
         if char:FindFirstChild(name) and char[name]:FindFirstChild("Communication") then
             return char[name]
         end
     end
+
     return nil
 end
 
@@ -39,12 +34,13 @@ local function findNearestToMouse()
     local mouseLocation = UserInputService:GetMouseLocation()
     local closestPlayer = nil
     local closestDist = math.huge
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             local char = player.Character
             if char and char:FindFirstChild("Head") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
                 local headPos = char.Head.Position
-                local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
+                local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(headPos)
                 if onScreen then
                     local dist = (Vector2.new(screenPos.X, screenPos.Y) - mouseLocation).Magnitude
                     if dist < closestDist then
@@ -55,88 +51,123 @@ local function findNearestToMouse()
             end
         end
     end
+
     return closestPlayer
-end
-
-local function toggleSpectate(ctx, target)
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-    if isSpectating or not target then
-        if hum then Camera.CameraSubject = hum end
-        isSpectating = false
-        if ctx and ctx.SharedTrash then ctx.SharedTrash.IsSpectating = false end
-    elseif target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
-        Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
-        isSpectating = true
-        if ctx and ctx.SharedTrash then ctx.SharedTrash.IsSpectating = true end
-    end
 end
 
 local function create3DTracer(fromAttachment, targetPosition)
     local startPart = Instance.new("Part")
-    startPart.Size, startPart.Anchored, startPart.CanCollide, startPart.Transparency = Vector3.new(0.1, 0.1, 0.1), true, false, 1
+    startPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    startPart.Anchored = true
+    startPart.CanCollide = false
+    startPart.Transparency = 1
     startPart.Position = fromAttachment.WorldPosition
     startPart.Parent = workspace
 
-    local attachStart = Instance.new("Attachment", startPart)
-    local endPart = startPart:Clone()
+    local attachStart = Instance.new("Attachment")
+    attachStart.Position = Vector3.new(0,0,0)
+    attachStart.Parent = startPart
+
+    local endPart = Instance.new("Part")
+    endPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    endPart.Anchored = true
+    endPart.CanCollide = false
+    endPart.Transparency = 1
     endPart.Position = targetPosition
     endPart.Parent = workspace
-    local attachEnd = Instance.new("Attachment", endPart)
+
+    local attachEnd = Instance.new("Attachment")
+    attachEnd.Position = Vector3.new(0,0,0)
+    attachEnd.Parent = endPart
 
     local beam = Instance.new("Beam")
-    beam.Attachment0, beam.Attachment1 = attachStart, attachEnd
-    beam.FaceCamera, beam.LightEmission = true, 0.9
-    beam.Color = ColorSequence.new(Color3.fromRGB(255, 190, 255), Color3.fromRGB(180, 140, 255))
-    beam.Width0, beam.Width1 = 0.2, 0.2
-    beam.Transparency = NumberSequence.new(0, 0.8)
+    beam.Attachment0 = attachStart
+    beam.Attachment1 = attachEnd
+    beam.FaceCamera = true
+    beam.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 190, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 140, 255))
+    })
+    beam.Width0 = 0.2
+    beam.Width1 = 0.2
+    beam.LightEmission = 0.9
+    beam.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 0.8)
+    })
     beam.Parent = workspace
 
     task.spawn(function()
-        for i = 1, 40 do
-            local factor = 1 - (i / 40)
-            beam.Width0, beam.Width1 = 0.2 * factor, 0.2 * factor
-            task.wait(0.025)
+        local steps = 40
+        local delayPerStep = 0.025
+        for i = 1, steps do
+            local factor = 1 - (i / steps)
+            beam.Width0 = 0.2 * factor
+            beam.Width1 = 0.2 * factor
+            task.wait(delayPerStep)
         end
-        beam:Destroy() startPart:Destroy() endPart:Destroy()
+
+        if beam and beam.Parent then beam:Destroy() end
+        if startPart and startPart.Parent then startPart:Destroy() end
+        if endPart and endPart.Parent then endPart:Destroy() end
     end)
 end
 
 local function updateLine()
     if not selectedTarget or not selectedTarget.Character or not selectedTarget.Character:FindFirstChild("Head") then
-        if line then line.Visible = false end
+        if line then line:Remove() line = nil end
         return
     end
+
+    local localChar = LocalPlayer.Character
+    if not localChar or not localChar:FindFirstChild("Head") then
+        if line then line:Remove() line = nil end
+        return
+    end
+
     if not line then
         line = Drawing.new("Line")
-        line.Visible, line.Color, line.Thickness = true, Color3.fromRGB(255, 255, 255), 2
+        line.Visible = true
+        line.Color = Color3.fromRGB(255, 255, 255)
+        line.Thickness = 2
+        line.Transparency = 1
     end
-    local localChar = LocalPlayer.Character
-    if not localChar or not localChar:FindFirstChild("Head") then line.Visible = false return end
 
-    local fromScreen, fromVisible = Camera:WorldToViewportPoint(localChar.Head.Position)
-    local toScreen, toVisible = Camera:WorldToViewportPoint(selectedTarget.Character.Head.Position)
+    local fromPos = localChar.Head.Position
+    local toPos = selectedTarget.Character.Head.Position
+
+    local fromScreen, fromVisible = workspace.CurrentCamera:WorldToViewportPoint(fromPos)
+    local toScreen, toVisible = workspace.CurrentCamera:WorldToViewportPoint(toPos)
 
     if fromVisible and toVisible then
-        line.From, line.To, line.Visible = Vector2.new(fromScreen.X, fromScreen.Y), Vector2.new(toScreen.X, toScreen.Y), true
+        line.From = Vector2.new(fromScreen.X, fromScreen.Y)
+        line.To = Vector2.new(toScreen.X, toScreen.Y)
+        line.Visible = true
     else
         line.Visible = false
     end
 end
 
 local lastAmmoPerAmmoObject = {}
+local lastPositions = {}
+local targetHistory = {}
 
 local function shoot(targetPlayer, ctx)
     local gun = getEquippedWeapon()
     if not gun then return end
+
     local ammo = gun:FindFirstChild("Ammo")
     if not ammo then return end
-    if lastAmmoPerAmmoObject[ammo] == nil then lastAmmoPerAmmoObject[ammo] = ammo.Value end
+
+    if lastAmmoPerAmmoObject[ammo] == nil then
+        lastAmmoPerAmmoObject[ammo] = ammo.Value
+    end
 
     local char = targetPlayer.Character
-    local head = char and char:FindFirstChild("Head")
-    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not char then return end
+
+    local head = char:FindFirstChild("Head")
+    local root = char:FindFirstChild("HumanoidRootPart")
     if not head or not root then return end
 
     local predicted, predictedVisuals = head.Position, head.Position
@@ -145,125 +176,148 @@ local function shoot(targetPlayer, ctx)
         predicted = head.Position + (Vector3.new(v.X, 0, v.Z).Unit * (v.Magnitude * 0.12))
     end
 
-    local muzzle = gun:FindFirstChild("Muzzle") or (gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front"))
+    local muzzle
+    if gun:FindFirstChild("Main") and gun.Main:FindFirstChild("Front") then
+        muzzle = gun.Main.Front
+    elseif gun:FindFirstChild("Muzzle") then
+        muzzle = gun.Muzzle
+    end
+
     gun.Communication:FireServer({ { head, predicted, CFrame.new() } }, { head }, true)
 
-    if ammo.Value ~= lastAmmoPerAmmoObject[ammo] then
-        lastAmmoPerAmmoObject[ammo] = ammo.Value
-        if muzzle then
-            local attach = muzzle:FindFirstChildOfClass("Attachment") or Instance.new("Attachment", muzzle)
-            create3DTracer(attach, predictedVisuals)
+    if ammo.Value == lastAmmoPerAmmoObject[ammo] then
+        return
+    end
+    lastAmmoPerAmmoObject[ammo] = ammo.Value
+
+    if muzzle then
+        local attach = muzzle:FindFirstChildOfClass("Attachment")
+        if not attach then
+            attach = Instance.new("Attachment")
+            attach.Parent = muzzle
+            task.spawn(function()
+                task.wait(1.5)
+                if attach and attach.Parent then attach:Destroy() end
+            end)
         end
+        create3DTracer(attach, predictedVisuals)
     end
 end
 
 local function stomp(targetPlayer)
-    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("Stomp")
-    if remote and targetPlayer.Character then remote:InvokeServer(targetPlayer.Character) end
+    local args = { targetPlayer.Character }
+    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("Stomp"):InvokeServer(unpack(args))
 end
 
-local _connections = {}
+local function blockShoot(_, state)
+    if state == Enum.UserInputState.Begin then
+        if getEquippedWeapon() and (randomTarget or selectedTarget) then
+            isShooting = true
+            return Enum.ContextActionResult.Sink
+        end
+    end
+    return Enum.ContextActionResult.Pass
+end
+
+local function getKeyCode(bind)
+    return (bind and bind.kind == "KeyCode") and bind.code or nil
+end
+
+local _connectionContextActionService, _connectionInputBegan, _connectionInputEnded, _connectionRenderStepped, _connectionCharacterAdded, _connectionPlayerRemoving = nil, nil, nil, nil, nil, nil
 
 return {
     Name = "SilentAim",
-    Desc = "Автоматическая стрельба и спектэйт",
+    Desc = "Автоматическая стрельба и помощь в наведении",
     Class = "Combat",
     Category = "Combat",
 
     Settings = {
         { Type = "Boolean", Name = "Anti Interaction", Default = false },
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
-        { Type = "BindSetting", Name = "Spectate Target", Default = { kind = "KeyCode", code = Enum.KeyCode.V } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Resolver", Default = false },
     },
 
     OnEnable = function(ctx)
-        ContextActionService:BindAction("BlockShoot", function(_, state)
-            if state == Enum.UserInputState.Begin and getEquippedWeapon() and (randomTarget or selectedTarget) then
-                isShooting = true
-                return Enum.ContextActionResult.Sink
-            end
-            return Enum.ContextActionResult.Pass
-        end, false, Enum.UserInputType.MouseButton1)
-
-        _connections.Input = UserInputService.InputBegan:Connect(function(input, processed)
-            if processed then return end
-
-            local selectBind = getKeyCode(ctx:GetSetting("Select Target"))
+        _connectionContextActionService = ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1)
+        _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
+            local selectTargetBind = getKeyCode(ctx:GetSetting("Select Target"))
             local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
-            local specBind = getKeyCode(ctx:GetSetting("Spectate Target"))
-
-            local currentTarget = selectedTarget or randomTarget
-
-            if selectBind and input.KeyCode == selectBind then
+            if processed then return end
+            if selectTargetBind and input.KeyCode == selectTargetBind then
                 if selectedTarget then
                     selectedTarget = nil
-                    if isSpectating then toggleSpectate(ctx) end
-                    if line then line.Visible = false end
+                    if line then line:Remove() line = nil end
                 else
+                    randomTarget = nil
                     selectedTarget = findNearestToMouse()
                 end
             end
 
-            if stompBind and input.KeyCode == stompBind and currentTarget then
-                stomp(currentTarget)
+            local target = selectedTarget ~= nil and selectedTarget or randomTarget
+            if stompBind and input.KeyCode == stompBind then
+                if randomTarget ~= nil or selectedTarget ~= nil then
+                    stomp(target)
+                end
             end
 
-            if specBind and input.KeyCode == specBind then
-                toggleSpectate(ctx, currentTarget)
+        end)
+        _connectionInputEnded = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                isShooting = false
             end
         end)
-
-        _connections.InputEnd = UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then isShooting = false end
-        end)
-
-        _connections.Render = RunService.RenderStepped:Connect(function()
-            if selectedTarget then
+        _connectionRenderStepped = RunService.RenderStepped:Connect(function()
+            if selectedTarget ~= nil then
                 updateLine()
                 randomTarget = nil
             else
                 randomTarget = findNearestToMouse()
             end
 
-            local target = selectedTarget or randomTarget
-            if isShooting and target then shoot(target, ctx) end
-
-            if isSpectating then
-                if not target or not target.Character or not target.Character:FindFirstChildOfClass("Humanoid") then
-                    toggleSpectate(ctx)
-                end
+            local target = selectedTarget ~= nil and selectedTarget or randomTarget
+            if isShooting and (randomTarget or selectedTarget) then
+                shoot(target, ctx)
             end
 
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
         end)
 
-        _connections.Death = LocalPlayer.CharacterAdded:Connect(function()
+        _connectionCharacterAdded = LocalPlayer.CharacterAdded:Connect(function()
             if ctx:GetSetting("Reset Target On Death") then
                 selectedTarget = nil
-                if isSpectating then toggleSpectate(ctx) end
+                if line then line:Remove() line = nil end
             end
         end)
 
-        _connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(p)
-            if p == selectedTarget then
+        _connectionPlayerRemoving = Players.PlayerRemoving:Connect(function(player)
+            if player == selectedTarget then
                 selectedTarget = nil
-                if isSpectating then toggleSpectate(ctx) end
-                if line then line.Visible = false end
+                if line then line:Remove() line = nil end
             end
         end)
     end,
 
     OnDisable = function(ctx)
-        ContextActionService:UnbindAction("BlockShoot")
-        for _, c in pairs(_connections) do c:Disconnect() end
-        _connections = {}
+        isShooting = false
+        randomTarget = nil
+        selectedTarget = nil
+        if _connectionContextActionService then _connectionContextActionService:Disconnect() _connectionContextActionService = nil end
+        if _connectionInputBegan then _connectionInputBegan:Disconnect() _connectionInputBegan = nil end
+        if _connectionInputEnded then _connectionInputEnded:Disconnect() _connectionInputEnded = nil end
+        if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
+        if _connectionCharacterAdded then _connectionCharacterAdded:Disconnect() _connectionCharacterAdded = nil end
+        if _connectionPlayerRemoving then _connectionPlayerRemoving:Disconnect() _connectionPlayerRemoving = nil end
 
-        if isSpectating then toggleSpectate(ctx) end
-        if line then line:Remove() line = nil end
-        isShooting, selectedTarget, randomTarget = false, nil, nil
+        if line then
+            line:Remove()
+            line = nil
+        end
+
+        table.clear(lastPositions)
+        table.clear(targetHistory)
+        table.clear(lastAmmoPerAmmoObject)
         ProximityPromptService.Enabled = true
     end,
 }
