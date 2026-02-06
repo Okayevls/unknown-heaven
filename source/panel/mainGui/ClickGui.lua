@@ -304,6 +304,7 @@ local settingsCloseOverlay = mk("TextButton", {
     Visible=false,
     Active=false,
     Size=UDim2.fromScale(1,1),
+    ZIndex = 9
 }, content)
 
 local settingsPane = mk("Frame", {
@@ -917,11 +918,12 @@ end
 
 local function renderSettings(tab, moduleName)
     clearSettingsUI()
+
+    currentSettings = {tab = tab, module = moduleName}
+
     settingsPane.Visible = true
     settingsCloseOverlay.Visible = true
     settingsCloseOverlay.Active = true
-
-    currentSettings = {tab = tab, module = moduleName}
 
     settingsTitle.Text = ("Settings • %s"):format(moduleName)
     --settingsSub.Text = State.Modules[tab][moduleName].Desc
