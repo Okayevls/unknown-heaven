@@ -303,6 +303,8 @@ return {
     end,
 
     OnDisable = function(ctx)
+        ctx.SharedTrash.SelectedTarget = nil
+        ctx.SharedTrash.RandomTarget = nil
         isShooting = false
         randomTarget = nil
         selectedTarget = nil

@@ -236,11 +236,11 @@ function HudMethods:renderTargetHud(ctx)
     local th = create("Frame", {
         Name = "TargetHud", Size = UDim2.fromOffset(220, 60), Position = UDim2.new(0.5, 50, 0.5, 50),
         BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false,
-        ClipsDescendants = true, BackgroundTransparency = 1 -- Начинаем с невидимого
+        ClipsDescendants = true, BackgroundTransparency = 1
     })
     uiRefs.TargetHud = th
     local stroke = applyStyle(th, 10)
-    stroke.Transparency = 1 -- Скрываем обводку для анимации
+    stroke.Transparency = 1
     applyScaleDrag(th, bgGui)
 
     -- Ник цели
