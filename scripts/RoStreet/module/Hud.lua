@@ -34,41 +34,40 @@ end
 
 local function applyScaleDrag(frame, targetGui)
     local dragging = false
-    local dragInput = nil
     local dragStart = nil
     local startPos = nil
 
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
 
-            input.Changed:Connect(function()
+            dragStart = input.Position
+            startPos = Vector2.new(frame.AbsolutePosition.X, frame.AbsolutePosition.Y)
+
+            local connection
+            connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
+                    connection:Disconnect()
                 end
             end)
         end
     end))
 
-    table.insert(connections, frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end))
-
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            local screenSize = targetGui.AbsoluteSize
+            local screen = targetGui.AbsoluteSize
 
-            local deltaX = delta.X / screenSize.X
-            local deltaY = delta.Y / screenSize.Y
+            local newX = startPos.X + delta.X
+            local newY = startPos.Y + delta.Y
+
+            newX = newX + (frame.Size.X.Offset * frame.AnchorPoint.X)
+            newY = newY + (frame.Size.Y.Offset * frame.AnchorPoint.Y)
 
             frame.Position = UDim2.fromScale(
-                    math.clamp(startPos.X.Scale + deltaX, 0, 1),
-                    math.clamp(startPos.Y.Scale + deltaY, 0, 1)
+                    math.clamp(newX / screen.X, 0, 1),
+                    math.clamp(newY / screen.Y, 0, 1)
             )
         end
     end))
