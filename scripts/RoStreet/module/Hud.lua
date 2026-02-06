@@ -188,7 +188,7 @@ function HudMethods:renderTargetHud(ctx)
             if values and values:FindFirstChild("Armor") then
                 armor = values.Armor.Value
             end
-            
+
             TweenService:Create(hpFill, TweenInfo.new(0.3), {Size = UDim2.fromScale(math.clamp(hum.Health/hum.MaxHealth, 0, 1), 1)}):Play()
             TweenService:Create(apFill, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.fromScale(math.clamp(armor/100, 0, 1), 1)}):Play()
 
