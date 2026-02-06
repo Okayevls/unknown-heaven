@@ -110,7 +110,7 @@ function HudMethods:renderStaffList(ctx)
     }
 
     local sl = create("Frame", {
-        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 250),
+        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 300),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
         Visible = ctx:GetSetting("StaffList"),
         ClipsDescendants = true
