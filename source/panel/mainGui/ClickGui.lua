@@ -365,7 +365,7 @@ local settingsContainer = mk("ScrollingFrame", {
     AutomaticCanvasSize = Enum.AutomaticSize.Y,
     CanvasSize = UDim2.new(0,0,0,0),
 
-    Active = true, -- ДОБАВИТЬ ЭТО
+    Active = true,
     ClipsDescendants = true,
 }, settingsPane)
 
@@ -401,8 +401,6 @@ end
 
 local function closeSettings()
     settingsPane.Visible = false
-    --settingsCloseOverlay.Visible = false
-    --settingsCloseOverlay.Active = false
     currentSettings = nil
     clearSettingsUI()
 end
@@ -506,7 +504,7 @@ end
 
 local UIRefreshBind = {}
 local activeBindTarget = nil
-local BindMap = {} -- key -> {tab=, module=}
+local BindMap = {}
 local function bindKey(b)
     if not b then return nil end
     return ("%s:%s"):format(b.kind, b.code.Name)
@@ -663,8 +661,6 @@ local function addSliderSetting(tab, moduleName, sDef)
 
     local initial = moduleMgr:GetSetting(tab, moduleName, sDef.Name)
     setUI(initial)
-
-    --setValue(moduleMgr:GetSetting(tab, moduleName, sDef.Name))
 
     local dragging = false
     local function updateFromX(x)
@@ -925,9 +921,6 @@ local function renderSettings(tab, moduleName)
     currentSettings = {tab = tab, module = moduleName}
 
     settingsPane.Visible = true
-
-    --settingsCloseOverlay.Visible = true
-    --settingsCloseOverlay.Active = true
 
     settingsTitle.Text = ("Settings • %s"):format(moduleName)
     --settingsSub.Text = State.Modules[tab][moduleName].Desc
@@ -1549,7 +1542,7 @@ local function renderTab(tabName)
     end
 
     clearModulesUI()
-    UIToggles[tabName] = {} -- сбрасываем карту тумблеров под вкладку
+    UIToggles[tabName] = {}
 
     local defs = moduleMgr:GetModuleDefs(tabName)
     for _, def in ipairs(defs) do
