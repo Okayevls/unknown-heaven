@@ -4,7 +4,8 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
-local screenGui = nil
+local bgGui = nil
+local fgGui = nil
 
 local elements = {}
 local connections = {}
@@ -32,7 +33,7 @@ local function applyStyle(obj, radius)
     create("UIStroke", {Color = Theme.Stroke, Thickness = 1}, obj)
 end
 
-local function applyScaleDrag(frame)
+local function applyScaleDrag(frame, targetGui)
     local dragging, dragStart, startPos = false, nil, nil
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -42,7 +43,7 @@ local function applyScaleDrag(frame)
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            local screen = screenGui.AbsoluteSize
+            local screen = targetGui.AbsoluteSize
             local deltaScaleX, deltaScaleY = delta.X / screen.X, delta.Y / screen.Y
             local newScaleX, newScaleY = startPos.X.Scale + deltaScaleX, startPos.Y.Scale + deltaScaleY
             local offsetFromAnchorX = (frame.Size.X.Offset / screen.X) * frame.AnchorPoint.X
@@ -59,7 +60,7 @@ end
 
 return {
     Name = "Hud",
-    Desc = "Показывает всякие визуальные панели",
+    Desc = "Heaven HUD: Split Z-Index Logic",
     Class = "Visuals",
     Category = "Visuals",
     AlwaysEnabled = true,
@@ -74,7 +75,9 @@ return {
 
     OnEnable = function(ctx)
         local playerGui = player:WaitForChild("PlayerGui")
-        screenGui = create("ScreenGui", { Name = "HeavenHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = -1 }, playerGui)
+
+        bgGui = create("ScreenGui", { Name = "HeavenHud_BG", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = -1 }, playerGui)
+        fgGui = create("ScreenGui", { Name = "HeavenHud_FG", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 1000 }, playerGui)
 
         activeNotifs = {}
         uiRefs = {}
@@ -82,11 +85,11 @@ return {
         -- 1. Watermark
         local wm = create("Frame", {
             Name = "Watermark", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(280, 30),
-            Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = screenGui,
+            Position = UDim2.new(0.5, 0, 0, 8), BackgroundColor3 = Theme.Panel, Parent = bgGui,
             Visible = ctx:GetSetting("Watermark")
         })
         uiRefs.Watermark = wm
-        applyStyle(wm, 6); applyScaleDrag(wm)
+        applyStyle(wm, 6); applyScaleDrag(wm, bgGui)
         local wmLabel = create("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "Heaven  •  00 FPS  •  00:00", TextColor3 = Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = wm })
 
         local smoothedFps = 60
@@ -100,11 +103,11 @@ return {
         -- 2. Staff List
         local sl = create("Frame", {
             Name = "StaffList", Size = UDim2.fromOffset(170, 100), Position = UDim2.new(0, 20, 0, 85),
-            BackgroundColor3 = Theme.Panel, Parent = screenGui,
+            BackgroundColor3 = Theme.Panel, Parent = bgGui,
             Visible = ctx:GetSetting("StaffList")
         })
         uiRefs.StaffList = sl
-        applyStyle(sl, 10); applyScaleDrag(sl)
+        applyStyle(sl, 10); applyScaleDrag(sl, bgGui)
         create("TextLabel", { Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, Text = "Staff Online", TextColor3 = Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 12, Parent = sl })
         local listFrame = create("Frame", { Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28), BackgroundTransparency = 1, Parent = sl })
         create("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center }, listFrame)
@@ -113,7 +116,7 @@ return {
         -- 3. Notifications
         local notifyArea = create("Frame", {
             Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0), Position = UDim2.new(1, -280, 0.92, 0),
-            AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, Parent = screenGui,
+            AnchorPoint = Vector2.new(0, 1), BackgroundTransparency = 1, Parent = bgGui,
             Visible = ctx:GetSetting("Notifications")
         })
         uiRefs.Notifications = notifyArea
@@ -146,44 +149,40 @@ return {
         -- 4. Discord Ad
         local adLabel = create("TextLabel", {
             Size = UDim2.fromOffset(150, 24), BackgroundTransparency = 1, Text = "discord.gg/heaven",
-            TextColor3 = Theme.Text, TextTransparency = 0.6, Font = Enum.Font.GothamBold, TextSize = 10,
-            Position = UDim2.fromOffset(200, 200), Parent = screenGui,
-            Visible = ctx:GetSetting("DiscordAd")
+            TextColor3 = Theme.Text, TextTransparency = 0.4, Font = Enum.Font.GothamBold, TextSize = 11,
+            Position = UDim2.fromOffset(200, 200), Parent = fgGui,
+            Visible = ctx:GetSetting("DiscordAd"),
+            ZIndex = 9999
         })
         uiRefs.DiscordAd = adLabel
 
-        local vel = Vector2.new(75, 75)
+        local vel = Vector2.new(85, 85)
         local curX, curY = 200, 200
         table.insert(connections, RunService.RenderStepped:Connect(function(dt)
             if not adLabel or not adLabel.Parent or not adLabel.Visible then return end
-            local screen = screenGui.AbsoluteSize
+            local screen = fgGui.AbsoluteSize
             curX, curY = curX + (vel.X * dt), curY + (vel.Y * dt)
             if curX <= 0 or curX + adLabel.AbsoluteSize.X >= screen.X then vel = Vector2.new(-vel.X, vel.Y) curX = math.clamp(curX, 0, screen.X - adLabel.AbsoluteSize.X) end
             if curY <= 0 or curY + adLabel.AbsoluteSize.Y >= screen.Y then vel = Vector2.new(vel.X, -vel.Y) curY = math.clamp(curY, 0, screen.Y - adLabel.AbsoluteSize.Y) end
             adLabel.Position = UDim2.fromOffset(curX, curY)
         end))
 
-
         table.insert(connections, ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
                 local ref = uiRefs[payload.key]
                 if ref then
                     ref.Visible = payload.value
-                    if payload.key == "Notifications" and payload.value == false then
-                        for _, n in ipairs(activeNotifs) do n:Destroy() end
-                        activeNotifs = {}
-                    end
                 end
             end
         end))
-
-        spawnNotify("Heaven", "Live Settings Enabled")
     end,
 
     OnDisable = function(ctx)
         ctx.Shared.Notify = nil
         for _, conn in ipairs(connections) do if conn then conn:Disconnect() end end
         for _, el in ipairs(elements) do if el then el:Destroy() end end
-        activeNotifs, uiRefs, connections, elements, screenGui = {}, {}, {}, {}, nil
+        if bgGui then bgGui:Destroy() end
+        if fgGui then fgGui:Destroy() end
+        activeNotifs, uiRefs, connections, elements = {}, {}, {}, {}
     end,
 }
