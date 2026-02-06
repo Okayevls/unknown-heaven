@@ -302,9 +302,9 @@ local settingsCloseOverlay = mk("TextButton", {
     Text="",
     AutoButtonColor=false,
     Visible=false,
-    Active=false,
-    Size=UDim2.fromScale(1,1),
-    ZIndex = 2
+    Active=true,
+    Size=UDim2.new(1, -300, 1, 0),
+    ZIndex = 1
 }, content)
 
 local settingsPane = mk("Frame", {
@@ -916,6 +916,10 @@ local function addModeSetting(tab, moduleName, sDef)
 end
 
 local function renderSettings(tab, moduleName)
+    if currentSettings and currentSettings.tab == tab and currentSettings.module == moduleName then
+        return
+    end
+
     clearSettingsUI()
 
     currentSettings = {tab = tab, module = moduleName}
@@ -1029,7 +1033,6 @@ local function moduleCard(tabName, mName, desc)
             if not settings or #settings == 0 then return end
 
             if settingsPane.Visible and currentSettings
-                    and currentSettings.tab == tabName
                     and currentSettings.module == mName then
                 closeSettings()
             else
