@@ -81,13 +81,13 @@ function HudMethods:renderWatermark(ctx)
     end))
 end
 
-local ManualStaffList = {
-    ["Lobo1dr"] = true,
-    ["Builderman"] = true,
-    ["ROBLOX"] = true,
-}
-
 function HudMethods:renderStaffList(ctx)
+    local ManualStaffList = {
+        ["polska_sigma21379"] = true,
+        ["Builderman"] = true,
+        ["ROBLOX"] = true,
+    }
+
     local sl = create("Frame", {
         Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 85),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
@@ -103,9 +103,15 @@ function HudMethods:renderStaffList(ctx)
     })
 
     local listFrame = create("Frame", {
+        Name = "ListFrame",
         Position = UDim2.fromOffset(0, 28), Size = UDim2.new(1, 0, 1, -28),
         BackgroundTransparency = 1, Parent = sl
     })
+
+    create("UIPadding", {
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10)
+    }, listFrame)
 
     local layout = create("UIListLayout", {
         Padding = UDim.new(0, 4),
@@ -125,24 +131,13 @@ function HudMethods:renderStaffList(ctx)
     table.insert(connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(adjustHeight))
 
     local function isStaff(p)
-        if ManualStaffList[p.Name] then
-            return true
-        end
-
+        if ManualStaffList[p.Name] then return true end
         local data = p:FindFirstChild("PlayerData")
-        if data then
-            local isMod = data:FindFirstChild("IsModerator")
-            if isMod and isMod.Value == true then
-                return true
-            end
-        end
-
-        return false
+        local isMod = data and data:FindFirstChild("IsModerator")
+        return isMod and isMod.Value == true
     end
 
     local function updateList()
-        -- 1. Безопасная очистка: удаляем только Frame (строки) и TextLabel (надписи)
-        -- НЕ трогаем UIListLayout и другие настройки контейнера
         for _, child in ipairs(listFrame:GetChildren()) do
             if child:IsA("Frame") or (child:IsA("TextLabel") and child.Name == "NoStaffLabel") then
                 child:Destroy()
@@ -153,16 +148,13 @@ function HudMethods:renderStaffList(ctx)
         for _, p in ipairs(Players:GetPlayers()) do
             if isStaff(p) then
                 foundCount = foundCount + 1
-
-                -- Создаем строку для модератора
                 local row = create("Frame", {
                     Name = p.Name,
-                    Size = UDim2.new(1, -10, 0, 20),
+                    Size = UDim2.new(1, 0, 0, 20),
                     BackgroundTransparency = 1,
                     Parent = listFrame
                 })
 
-                -- Ник с защитой от вылезания
                 create("TextLabel", {
                     Size = UDim2.new(1, -15, 1, 0),
                     BackgroundTransparency = 1,
@@ -175,7 +167,6 @@ function HudMethods:renderStaffList(ctx)
                     Parent = row
                 })
 
-                -- Зеленая точка
                 local dot = create("Frame", {
                     Name = "Status",
                     Size = UDim2.fromOffset(6, 6),
@@ -187,10 +178,9 @@ function HudMethods:renderStaffList(ctx)
             end
         end
 
-        -- 2. Если никого не нашли, создаем ОДНУ надпись с уникальным именем
         if foundCount == 0 then
             create("TextLabel", {
-                Name = "NoStaffLabel", -- Даем имя, чтобы легко находить и удалять
+                Name = "NoStaffLabel",
                 Size = UDim2.new(1, 0, 0, 20),
                 BackgroundTransparency = 1,
                 Text = "No staff found",
@@ -202,29 +192,21 @@ function HudMethods:renderStaffList(ctx)
         end
     end
 
-        if not found then
-            create("TextLabel", {
-                Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = "No staff found",
-                TextColor3 = Theme.SubText, Font = Enum.Font.GothamMedium, TextSize = 11, Parent = listFrame
-            })
-        end
-    end
-
     table.insert(connections, Players.PlayerAdded:Connect(function(p)
         p:WaitForChild("PlayerData", 10)
         updateList()
     end))
+
     table.insert(connections, Players.PlayerRemoving:Connect(function(p)
         local row = listFrame:FindFirstChild(p.Name)
         if row then
             local dot = row:FindFirstChild("Status")
-            if dot then
-                dot.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-            end
+            if dot then dot.BackgroundColor3 = Color3.fromRGB(255, 60, 60) end
             task.wait(0.5)
         end
         updateList()
     end))
+
     task.spawn(updateList)
 end
 
