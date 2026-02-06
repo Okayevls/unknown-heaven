@@ -23,6 +23,7 @@ return {
     System = {
         "06c5798aed96f538bdb9976ac6d16cf8171aac296a0fc38ee58b085130229e2c", -- Main key
         "d57c1624e7e9747997b50d6a607f9d6f9b8fbf07ac975fee57a45f00283b724c", --Prokosik
-        "82007d9a5d4c4f69664b8cc20d1052e98f19c0617aaf7fa7d8701a44fe26ab03:07.02.2026-23:59" --Froginsait
+        "82007d9a5d4c4f69664b8cc20d1052e98f19c0617aaf7fa7d8701a44fe26ab03:07.07.2026-23:59", --Froginsait
+        "4e9cd5e96868aec2e83d606f8da945d9ead55e7038fed8a2b85b95332c3f63a3:07.07.2026-23:59" --Sanya
     },
 }
