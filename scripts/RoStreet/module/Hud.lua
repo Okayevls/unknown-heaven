@@ -33,32 +33,43 @@ local function applyStyle(obj, radius)
 end
 
 local function applyScaleDrag(frame, targetGui)
-    local dragging, dragStart, startPos = false, nil, nil
+    local dragging = false
+    local dragInput = nil
+    local dragStart = nil
+    local startPos = nil
 
     table.insert(connections, frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end))
+
+    table.insert(connections, frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
         end
     end))
 
     table.insert(connections, UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            local screen = targetGui.AbsoluteSize
-            local deltaScaleX = delta.X / screen.X
-            local deltaScaleY = delta.Y / screen.Y
-            frame.Position = UDim2.fromScale(
-                    math.clamp(startPos.X.Scale + deltaScaleX, 0, 1),
-                    math.clamp(startPos.Y.Scale + deltaScaleY, 0, 1)
-            )
-        end
-    end))
+            local screenSize = targetGui.AbsoluteSize
 
-    table.insert(connections, UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+            local deltaX = delta.X / screenSize.X
+            local deltaY = delta.Y / screenSize.Y
+
+            frame.Position = UDim2.fromScale(
+                    math.clamp(startPos.X.Scale + deltaX, 0, 1),
+                    math.clamp(startPos.Y.Scale + deltaY, 0, 1)
+            )
         end
     end))
 end
@@ -97,7 +108,7 @@ function HudMethods:renderStaffList(ctx)
     }
 
     local sl = create("Frame", {
-        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 180),
+        Name = "StaffList", Size = UDim2.fromOffset(170, 40), Position = UDim2.new(0, 20, 0, 250),
         BackgroundColor3 = Theme.Panel, Parent = bgGui,
         Visible = ctx:GetSetting("StaffList"),
         ClipsDescendants = true
