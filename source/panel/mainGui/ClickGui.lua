@@ -302,7 +302,7 @@ local settingsCloseOverlay = mk("TextButton", {
     Text="",
     AutoButtonColor=false,
     Visible=false,
-    Active=true,
+    Active=false,
     Size=UDim2.new(1, -300, 1, 0),
     ZIndex = 1
 }, content)
@@ -410,20 +410,20 @@ settingsCloseBtn.MouseButton1Click:Connect(closeSettings)
 settingsPane.ZIndex = content.ZIndex + 10
 settingsCloseOverlay.ZIndex = settingsPane.ZIndex - 1
 
-settingsCloseOverlay.MouseButton1Down:Connect(function()
-    local mousePos = UserInputService:GetMouseLocation()
-    local panePos = settingsPane.AbsolutePosition
-    local paneSize = settingsPane.AbsoluteSize
-
-    local isInside = mousePos.X >= panePos.X and mousePos.X <= (panePos.X + paneSize.X) and
-            mousePos.Y >= (panePos.Y + 36) and mousePos.Y <= (panePos.Y + paneSize.Y + 36)
-
-    if isInside then
-        return
-    end
-
-    closeSettings()
-end)
+--settingsCloseOverlay.MouseButton1Down:Connect(function()
+--    local mousePos = UserInputService:GetMouseLocation()
+--    local panePos = settingsPane.AbsolutePosition
+--    local paneSize = settingsPane.AbsoluteSize
+--
+--    local isInside = mousePos.X >= panePos.X and mousePos.X <= (panePos.X + paneSize.X) and
+--            mousePos.Y >= (panePos.Y + 36) and mousePos.Y <= (panePos.Y + paneSize.Y + 36)
+--
+--    if isInside then
+--        return
+--    end
+--
+--    closeSettings()
+--end)
 
 local function createMiniToggle(parent)
     local root = mk("Frame", {BackgroundColor3=Theme.Panel, Size=UDim2.fromOffset(38, 20)}, parent)
@@ -714,12 +714,20 @@ local function addBindSettingRow(tab, moduleName, sDef)
     updateUI()
 
     trackConn(btn.MouseButton1Down:Connect(function()
-        if activeBindTarget and activeBindTarget.settingName == sDef.Name then
+        -- если уже выбираем этот BindSetting и жмём ЛКМ ещё раз по этой же кнопке -> удалить
+        if activeBindTarget
+                and activeBindTarget.settingName == sDef.Name
+                and activeBindTarget.tab == tab
+                and activeBindTarget.moduleName == moduleName then
+
             activeBindTarget = nil
+            moduleMgr:SetSetting(tab, moduleName, sDef.Name, nil)
             updateUI()
+            tween(btn, 0.10, {BackgroundColor3 = Theme.Panel, TextColor3 = Theme.Text})
             return
         end
 
+        -- начинаем выбор бинда
         activeBindTarget = {
             tab = tab,
             moduleName = moduleName,
@@ -1597,6 +1605,18 @@ end)
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
 
+    if settingsPane.Visible and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local m = UserInputService:GetMouseLocation()
+        local p = settingsPane.AbsolutePosition
+        local s = settingsPane.AbsoluteSize
+        local inside = (m.X >= p.X and m.X <= p.X + s.X and m.Y >= p.Y and m.Y <= p.Y + s.Y)
+
+        if not inside then
+            closeSettings()
+            return
+        end
+    end
+
     if isDeleteBindInput(input) then
         if activeBindTarget then
             setBind(activeBindTarget.tab, activeBindTarget.moduleName, nil)
@@ -1608,6 +1628,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 
     if activeBindTarget then
+        -- ЛКМ во время выбора бинда = удалить бинд (и выйти из режима выбора)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             if activeBindTarget.settingName then
                 moduleMgr:SetSetting(activeBindTarget.tab, activeBindTarget.moduleName, activeBindTarget.settingName, nil)
@@ -1704,25 +1725,25 @@ screenGui.Destroying:Connect(function()
     restoreMouse()
 end)
 
-local function isMouseInsideSettingsPane()
-    local m = UserInputService:GetMouseLocation()
-    local p = settingsPane.AbsolutePosition
-    local s = settingsPane.AbsoluteSize
+--local function isMouseInsideSettingsPane()
+--    local m = UserInputService:GetMouseLocation()
+--    local p = settingsPane.AbsolutePosition
+--    local s = settingsPane.AbsoluteSize
+--
+--    return (m.X >= p.X and m.X <= p.X + s.X and
+--            m.Y >= p.Y and m.Y <= p.Y + s.Y)
+--end
 
-    return (m.X >= p.X and m.X <= p.X + s.X and
-            m.Y >= p.Y and m.Y <= p.Y + s.Y)
-end
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if not settingsPane.Visible then return end
-
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if not isMouseInsideSettingsPane() then
-            closeSettings()
-        end
-    end
-end)
+--UserInputService.InputBegan:Connect(function(input, gpe)
+--    if gpe then return end
+--    if not settingsPane.Visible then return end
+--
+--    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+--        if not isMouseInsideSettingsPane() then
+--            closeSettings()
+--        end
+--    end
+--end)
 
 toggleUI(true)
 applyTheme()
