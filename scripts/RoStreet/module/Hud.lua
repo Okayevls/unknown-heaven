@@ -125,23 +125,54 @@ return {
         local function spawnNotify(title, msg)
             if not ctx:GetSetting("Notifications") then return end
             local max = ctx:GetSetting("MaxNotifications") or 5
+
             if #activeNotifs >= max then
                 local oldest = table.remove(activeNotifs, 1)
                 if oldest and oldest.Parent then oldest:Destroy() end
             end
-            local n = create("Frame", { Size = UDim2.new(1, 0, 0, 54), BackgroundColor3 = Theme.Panel, ClipsDescendants = true, Parent = notifyArea })
+            
+            local n = create("CanvasGroup", {
+                Name = "Notification",
+                Size = UDim2.new(1, 0, 0, 54),
+                BackgroundColor3 = Theme.Panel,
+                GroupTransparency = 1,
+                ClipsDescendants = true,
+                Parent = notifyArea
+            })
+
             applyStyle(n, 10)
             create("UIPadding", {PaddingLeft = UDim.new(0, 12), PaddingTop = UDim.new(0, 8)}, n)
-            create("TextLabel", { Text = title, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
-            create("TextLabel", { Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11, TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0, BackgroundTransparency = 1, Parent = n })
+
+            create("TextLabel", {
+                Text = title, Font = Enum.Font.GothamBold, TextSize = 13,
+                TextColor3 = Theme.Accent, Size = UDim2.new(1, 0, 0, 16),
+                TextXAlignment = 0, BackgroundTransparency = 1, Parent = n
+            })
+
+            create("TextLabel", {
+                Text = msg, Font = Enum.Font.GothamMedium, TextSize = 11,
+                TextColor3 = Theme.SubText, Position = UDim2.fromOffset(0, 18),
+                Size = UDim2.new(1, 0, 0, 16), TextXAlignment = 0,
+                BackgroundTransparency = 1, Parent = n
+            })
+
             table.insert(activeNotifs, n)
             n.Size = UDim2.new(1, 0, 0, 0)
-            TweenService:Create(n, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 54)}):Play()
+            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(1, 0, 0, 54),
+                GroupTransparency = 0
+            }):Play()
+
             task.delay(4, function()
                 if not n or not n.Parent then return end
-                local idx = table.find(activeNotifs, n); if idx then table.remove(activeNotifs, idx) end
-                local tw = TweenService:Create(n, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1})
-                tw:Play(); tw.Completed:Connect(function() n:Destroy() end)
+                local idx = table.find(activeNotifs, n)
+                if idx then table.remove(activeNotifs, idx) end
+                local tw = TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+                    Size = UDim2.new(1, 0, 0, 0),
+                    GroupTransparency = 1
+                })
+                tw:Play()
+                tw.Completed:Connect(function() n:Destroy() end)
             end)
         end
         ctx.Shared.Notify = spawnNotify
