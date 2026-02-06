@@ -545,8 +545,7 @@ local function inputToBind(input)
         return {kind="KeyCode", code=input.KeyCode}
     end
 
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.MouseButton2
+    if input.UserInputType == Enum.UserInputType.MouseButton2
             or input.UserInputType == Enum.UserInputType.MouseButton3 then
         return {kind="UserInputType", code=input.UserInputType}
     end
@@ -714,20 +713,18 @@ local function addBindSettingRow(tab, moduleName, sDef)
     updateUI()
 
     trackConn(btn.MouseButton1Down:Connect(function()
-        -- если уже выбираем этот BindSetting и жмём ЛКМ ещё раз по этой же кнопке -> удалить
         if activeBindTarget
                 and activeBindTarget.settingName == sDef.Name
                 and activeBindTarget.tab == tab
                 and activeBindTarget.moduleName == moduleName then
 
-            activeBindTarget = nil
             moduleMgr:SetSetting(tab, moduleName, sDef.Name, nil)
+            activeBindTarget = nil
             updateUI()
             tween(btn, 0.10, {BackgroundColor3 = Theme.Panel, TextColor3 = Theme.Text})
             return
         end
 
-        -- начинаем выбор бинда
         activeBindTarget = {
             tab = tab,
             moduleName = moduleName,
@@ -1628,7 +1625,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 
     if activeBindTarget then
-        -- ЛКМ во время выбора бинда = удалить бинд (и выйти из режима выбора)
+        -- ЛКМ во время выбора бинда = удалить
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             if activeBindTarget.settingName then
                 moduleMgr:SetSetting(activeBindTarget.tab, activeBindTarget.moduleName, activeBindTarget.settingName, nil)
@@ -1642,7 +1639,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
             return
         end
 
-        local bind = inputToBind(input)
+        local bind = inputToBind(input) -- теперь M1 сюда не попадёт
         if bind or isDeleteBindInput(input) then
             if activeBindTarget.settingName then
                 moduleMgr:SetSetting(activeBindTarget.tab, activeBindTarget.moduleName, activeBindTarget.settingName, bind)
@@ -1744,6 +1741,14 @@ end)
 --        end
 --    end
 --end)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if UserInputService:GetFocusedTextBox() then return end
+
+    if input.KeyCode == Enum.KeyCode.Insert then
+        toggleUI(not uiVisible)
+    end
+end)
 
 toggleUI(true)
 applyTheme()
