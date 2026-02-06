@@ -1033,6 +1033,10 @@ local function moduleCard(tabName, mName, desc)
                     and currentSettings.module == mName then
                 closeSettings()
             else
+                if settingsPane.Visible then
+                    clearSettingsUI()
+                end
+
                 renderSettings(tabName, mName)
             end
         end
