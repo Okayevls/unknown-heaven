@@ -281,6 +281,9 @@ return {
                 shoot(target, ctx)
             end
 
+            ctx.SharedTrash.SelectedTarget = selectedTarget
+            ctx.SharedTrash.RandomTarget = randomTarget
+
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
         end))
 

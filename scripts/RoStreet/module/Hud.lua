@@ -231,6 +231,64 @@ function HudMethods:renderStaffList(ctx)
     task.spawn(updateList)
 end
 
+function HudMethods:renderTargetHud(ctx)
+    local th = create("Frame", {
+        Name = "TargetHud", Size = UDim2.fromOffset(200, 60), Position = UDim2.new(0.5, 50, 0.5, 50),
+        BackgroundColor3 = Theme.Panel, Parent = bgGui, Visible = false, ClipsDescendants = true
+    })
+    uiRefs.TargetHud = th
+    applyStyle(th, 10); applyScaleDrag(th, bgGui)
+
+    local nameLabel = create("TextLabel", {
+        Position = UDim2.fromOffset(10, 8), Size = UDim2.new(1, -20, 0, 18),
+        BackgroundTransparency = 1, Text = "Target Name", TextColor3 = Theme.Text,
+        Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = th
+    })
+
+    local healthBarBack = create("Frame", {
+        Position = UDim2.fromOffset(10, 32), Size = UDim2.new(1, -20, 0, 8),
+        BackgroundColor3 = Theme.Stroke, Parent = th
+    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}, healthBarBack)
+
+    local healthBarFill = create("Frame", {
+        Size = UDim2.new(0.5, 0, 1, 0), BackgroundColor3 = Theme.Accent, Parent = healthBarBack
+    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}, healthBarFill)
+
+    local infoLabel = create("TextLabel", {
+        Position = UDim2.fromOffset(10, 42), Size = UDim2.new(1, -20, 0, 14),
+        BackgroundTransparency = 1, Text = "100 HP  •  0m", TextColor3 = Theme.SubText,
+        Font = Enum.Font.GothamMedium, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, Parent = th
+    })
+
+    table.insert(connections, RunService.RenderStepped:Connect(function()
+        if not ctx:GetSetting("TargetHud") then th.Visible = false return end
+
+        local target = ctx.SharedTrash.SelectedTarget or ctx.SharedTrash.RandomTarget
+
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+            local hum = target.Character.Humanoid
+            local root = target.Character:FindFirstChild("HumanoidRootPart")
+
+            if hum.Health > 0 then
+                th.Visible = true
+                nameLabel.Text = target.DisplayName or target.Name
+
+                local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                TweenService:Create(healthBarFill, TweenInfo.new(0.2), {Size = UDim2.fromScale(hpPercent, 1)}):Play()
+
+                local dist = root and math.floor((root.Position - player.Character.HumanoidRootPart.Position).Magnitude) or 0
+                infoLabel.Text = string.format("%d HP  •  %dm", math.floor(hum.Health), dist)
+            else
+                th.Visible = false
+            end
+        else
+            th.Visible = false
+        end
+    end))
+end
+
 function HudMethods:renderNotifications(ctx)
     local notifyArea = create("Frame", {
         Name = "NotifyArea", Size = UDim2.new(0, 260, 0.4, 0), Position = UDim2.new(1, -280, 0.92, 0),
@@ -310,6 +368,7 @@ return {
         { Type = "Boolean", Name = "Watermark", Default = true },
         { Type = "Boolean", Name = "StaffList", Default = true },
         { Type = "Boolean", Name = "Notifications", Default = true },
+        { Type = "Boolean", Name = "TargetHud", Default = true },
         { Type = "Slider",  Name = "MaxNotifications", Default = 5, Min = 1, Max = 12, Step = 1 },
         { Type = "Boolean", Name = "DiscordAd", Default = true },
     },
@@ -327,6 +386,7 @@ return {
         HudMethods:renderStaffList(ctx)
         HudMethods:renderNotifications(ctx)
         HudMethods:renderDiscordAd(ctx)
+        HudMethods:renderTargetHud(ctx)
 
         table.insert(connections, ctx.Changed:Connect(function(payload)
             if payload.moduleName == ctx.Name and payload.kind == "Setting" then
