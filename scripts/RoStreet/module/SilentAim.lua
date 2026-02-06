@@ -65,11 +65,11 @@ local function toggleSpectate(ctx, target)
     if isSpectating or not target then
         if hum then Camera.CameraSubject = hum end
         isSpectating = false
-        if ctx and ctx.Shared then ctx.Shared.IsSpectating = false end
+        if ctx and ctx.SharedTrash then ctx.SharedTrash.IsSpectating = false end
     elseif target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") then
         Camera.CameraSubject = target.Character:FindFirstChildOfClass("Humanoid")
         isSpectating = true
-        if ctx and ctx.Shared then ctx.Shared.IsSpectating = true end
+        if ctx and ctx.SharedTrash then ctx.SharedTrash.IsSpectating = true end
     end
 end
 

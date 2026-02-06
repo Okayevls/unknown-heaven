@@ -94,7 +94,7 @@ return {
                     desync.teleportPosition = randomOffset
                 end
 
-                local isSpectating = ctx.Shared and ctx.Shared.IsSpectating
+                local isSpectating = ctx.SharedTrash and ctx.SharedTrash.IsSpectating
 
                 if not isSpectating then
                     rootPart.CFrame = CFrame.new(desync.teleportPosition)
@@ -121,7 +121,7 @@ return {
                 end
             end))
 
-            if ctx.Shared and not ctx.Shared.IsSpectating then
+            if ctx.SharedTrash and not ctx.SharedTrash.IsSpectating then
                 workspace.CurrentCamera.CameraSubject = desync_setback
             end
         end
@@ -135,8 +135,8 @@ return {
         desync_setback.Parent = nil
 
         resetCamera()
-        if ctx.Shared then
-            ctx.Shared.IsSpectating = false
+        if ctx.SharedTrash then
+            ctx.SharedTrash.IsSpectating = false
         end
     end,
 }

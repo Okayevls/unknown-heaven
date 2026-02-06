@@ -1,4 +1,4 @@
-local GlobalSharedStorage = {}
+local GlobalSharedStorage, GlobalSharedTrashStorage = {}, {}
 
 export type Bind =
 { kind: "KeyCode", code: Enum.KeyCode }
@@ -23,6 +23,7 @@ export type ModuleCtx = {
    GetVisible: (self: ModuleCtx, settingName: string) -> boolean,
 
    Shared: { [string]: any },
+   SharedTrash: { [string]: any },
    Changed: RBXScriptSignal,
    SetEnabled: (self: ModuleCtx, enabled: boolean) -> (),
 }
@@ -216,6 +217,7 @@ local function makeCtx(mgr: ModuleManager, categoryName: string, moduleName: str
          Name = moduleName,
          Class = if st then st.Definition.Class else nil,
          Shared = GlobalSharedStorage,
+         SharedTrash = GlobalSharedTrashStorage,
          Changed = mgr.Changed,
 
          GetSetting = function(self: ModuleCtx, settingName: string)
