@@ -4,12 +4,14 @@ local RunService = game:GetService("RunService")
 local ContextActionService = game:GetService("ContextActionService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
+local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 local randomTarget = nil
 local selectedTarget = nil
 local line = nil
 local isShooting = false
+local isSpectating = false
 
 local SupportedWeapons = {
     ["AW1"] = true, ["Ak"] = true, ["Barrett"] = true, ["Deagle"] = true, ["Double Barrel"] = true, ["Draco"] = true,
@@ -53,6 +55,16 @@ local function findNearestToMouse()
     end
 
     return closestPlayer
+end
+
+local function toggleSpectate(target)
+    if isSpectating then
+        Camera.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+        isSpectating = false
+    elseif target and target.Character and target.Character:FindFirstChild("Humanoid") then
+        Camera.CameraSubject = target.Character.Humanoid
+        isSpectating = true
+    end
 end
 
 local function create3DTracer(fromAttachment, targetPosition)
@@ -234,6 +246,7 @@ return {
     Settings = {
         { Type = "Boolean", Name = "Anti Interaction", Default = false },
         { Type = "BindSetting", Name = "Select Target", Default = { kind = "KeyCode", code = Enum.KeyCode.H } },
+        { Type = "BindSetting", Name = "Spectate Target", Default = { kind = "KeyCode", code = Enum.KeyCode.V } },
         { Type = "BindSetting", Name = "Auto Stomp", Default = { kind = "KeyCode", code = Enum.KeyCode.N } },
         { Type = "Boolean", Name = "Reset Target On Death", Default = false },
         { Type = "Boolean", Name = "Resolver", Default = false },
@@ -248,6 +261,7 @@ return {
             if selectTargetBind and input.KeyCode == selectTargetBind then
                 if selectedTarget then
                     selectedTarget = nil
+                    if isSpectating then toggleSpectate() end
                     if line then line:Remove() line = nil end
                 else
                     randomTarget = nil
@@ -262,6 +276,9 @@ return {
                 end
             end
 
+            if spectateBind and input.KeyCode == spectateBind then
+                toggleSpectate(target)
+            end
         end)
         _connectionInputEnded = UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -281,12 +298,17 @@ return {
                 shoot(target, ctx)
             end
 
+            if isSpectating and (not target or not target.Character or not target.Character:FindFirstChild("Humanoid") or target.Character.Humanoid.Health <= 0) then
+                toggleSpectate()
+            end
+
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
         end)
 
         _connectionCharacterAdded = LocalPlayer.CharacterAdded:Connect(function()
             if ctx:GetSetting("Reset Target On Death") then
                 selectedTarget = nil
+                if isSpectating then toggleSpectate() end
                 if line then line:Remove() line = nil end
             end
         end)
@@ -294,6 +316,7 @@ return {
         _connectionPlayerRemoving = Players.PlayerRemoving:Connect(function(player)
             if player == selectedTarget then
                 selectedTarget = nil
+                if isSpectating then toggleSpectate() end
                 if line then line:Remove() line = nil end
             end
         end)
@@ -310,6 +333,7 @@ return {
         if _connectionCharacterAdded then _connectionCharacterAdded:Disconnect() _connectionCharacterAdded = nil end
         if _connectionPlayerRemoving then _connectionPlayerRemoving:Disconnect() _connectionPlayerRemoving = nil end
 
+        if isSpectating then toggleSpectate() end
         if line then
             line:Remove()
             line = nil
