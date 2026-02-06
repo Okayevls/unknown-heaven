@@ -223,7 +223,7 @@ local function getKeyCode(bind)
     return (bind and bind.kind == "KeyCode") and bind.code or nil
 end
 
-local _connectionContextActionService, _connectionInputBegan, _connectionInputEnded, _connectionRenderStepped, _connectionCharacterAdded, _connectionPlayerRemoving = nil, nil, nil, nil, nil, nil
+local _connections = {}
 
 return {
     Name = "SilentAim",
@@ -240,8 +240,8 @@ return {
     },
 
     OnEnable = function(ctx)
-        _connectionContextActionService = ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1)
-        _connectionInputBegan = UserInputService.InputBegan:Connect(function(input, processed)
+        table.insert(_connections, ContextActionService:BindAction("BlockShoot", blockShoot, false, Enum.UserInputType.MouseButton1))
+        table.insert(_connections, UserInputService.InputBegan:Connect(function(input, processed)
             local selectTargetBind = getKeyCode(ctx:GetSetting("Select Target"))
             local stompBind = getKeyCode(ctx:GetSetting("Auto Stomp"))
             if processed then return end
@@ -261,14 +261,13 @@ return {
                     stomp(target)
                 end
             end
-
-        end)
-        _connectionInputEnded = UserInputService.InputEnded:Connect(function(input)
+        end))
+        table.insert(_connections, UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 isShooting = false
             end
-        end)
-        _connectionRenderStepped = RunService.RenderStepped:Connect(function()
+        end))
+        table.insert(_connections, RunService.RenderStepped:Connect(function()
             if selectedTarget ~= nil then
                 updateLine()
                 randomTarget = nil
@@ -282,33 +281,31 @@ return {
             end
 
             ProximityPromptService.Enabled = not ctx:GetSetting("Anti Interaction")
-        end)
+        end))
 
-        _connectionCharacterAdded = LocalPlayer.CharacterAdded:Connect(function()
+        table.insert(_connections, LocalPlayer.CharacterAdded:Connect(function()
             if ctx:GetSetting("Reset Target On Death") then
                 selectedTarget = nil
                 if line then line:Remove() line = nil end
             end
-        end)
+        end))
 
-        _connectionPlayerRemoving = Players.PlayerRemoving:Connect(function(player)
+        table.insert(_connections, Players.PlayerRemoving:Connect(function(player)
             if player == selectedTarget then
                 selectedTarget = nil
                 if line then line:Remove() line = nil end
             end
-        end)
+        end))
     end,
 
     OnDisable = function(ctx)
         isShooting = false
         randomTarget = nil
         selectedTarget = nil
-        if _connectionContextActionService then _connectionContextActionService:Disconnect() _connectionContextActionService = nil end
-        if _connectionInputBegan then _connectionInputBegan:Disconnect() _connectionInputBegan = nil end
-        if _connectionInputEnded then _connectionInputEnded:Disconnect() _connectionInputEnded = nil end
-        if _connectionRenderStepped then _connectionRenderStepped:Disconnect() _connectionRenderStepped = nil end
-        if _connectionCharacterAdded then _connectionCharacterAdded:Disconnect() _connectionCharacterAdded = nil end
-        if _connectionPlayerRemoving then _connectionPlayerRemoving:Disconnect() _connectionPlayerRemoving = nil end
+        for _, conn in ipairs(_connections) do
+            conn:Disconnect()
+        end
+        _connections = {}
 
         if line then
             line:Remove()
